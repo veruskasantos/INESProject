@@ -1,0 +1,74 @@
+---
+title: "bb_analysis"
+author: "Veruska Santos"
+date: "10 de novembro de 2018"
+output: html_document
+---
+Importando biblioteca do R a ser usada para ler os dados e manipulá-los.
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+
+```
+
+Carregando os dados que serão analisados.
+
+#TODO em outra ferramenta, juntar os arquivos do buste POR DIA 
+#TODO execução por DIA =  um arquivo
+
+```{r read}
+gps_shape_data = read.csv(here::here("data/buste/2017_04_30/output.csv")) %>%
+  subset(select = -c(birthdate, gender)) #removing unecessary columns
+
+```
+
+
+Agrupando por ROTA - PARADA - HORÁRIO
+
+```{r}
+gps_shape_data <- gps_shape_data %>%
+  subset(select = c(route, busCode, timestamp, stopPointId, cardTimestamp, shapeLat, shapeLon))
+
+```
+
+```{r}
+
+library(lubridate)
+
+
+gps_shape_data$timestamp <- gsub(":", "", gps_shape_data$timestamp)
+
+previous_hour <- "02:05:00"
+next_hour <- "02:08:00"
+
+seq(from = gsub(":", "", previous_hour), to = gsub(":", "", next_hour), by = 1)
+
+
+gps_shape_data %>%
+  group_by(route, busCode)
+
+buses_map <- list()
+route_buses_map <- list()
+
+buses_map[[ "A" ]] <- gps_shape_data[1, ]
+buses_map[[ "B" ]] <- gps_shape_data[2, ]
+route_buses_map[[ "022" ]] <- (buses_map[[ "A" ]])
+route_buses_map[[ "022" ]] <- (buses_map[[ "B" ]])
+
+for (i in 1:(nrow(gps_shape_data)-1)) {
+  route <- gps_shape_data$route[i]
+  bus_code <- gps_shape_data$busCode[i]
+  
+  buses_map[[ bus_code ]] <- gps_shape_data[i, ]
+  route_buses_map[[ route ]] <- buses_map[[ bus_code ]]
+}
+
+for (buses in route_buses_map) {
+  print(buses)
+  previous_hour
+  next_hour
+}
+
+gps_shape_data[gps_shape_data$timestamp %within% hour_interval,]
+
+```
