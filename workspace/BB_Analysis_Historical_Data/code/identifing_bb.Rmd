@@ -8,6 +8,7 @@ Importando biblioteca do R a ser usada para ler os dados e manipulá-los.
 
 ```{r setup, message=FALSE, warning=FALSE}
 library(tidyverse)
+library(ggplot2)
 
 ```
 
@@ -21,11 +22,40 @@ gps_shape_data = read.csv(here::here("data/outputBusBunching/outputBusBunching-2
 
 
 ```{r read}
+# Total of bb in aeach route
 bb = gps_shape_data %>%
-  filter(busBunching != "")
+  mutate(hasBB = busBunching != "")  %>%
+  group_by(route, tripNum, busCode, hasBB) %>%
+  count()
+  
 
+tripHasBB = bb %>%
+  group_by(route, tripNum, busCode, hasBB) %>%
+  summarise()
 
-length(unique(bb$route))
+tripHasBB
+
+t = tripHasBB %>% 
+  group_by(route, busCode) %>% 
+  mutate(
+    has = max(hasBB) 
+    #revenue_fraction = revenue / daily_revenue
+  ) %>%
+  subset(select = -c(hasBB))
+
+route_bus_trip_bb <- setNames(aggregate(t$has, by = list(t$route, t$busCode, t$tripNum), max), c("route", "busCode", "tripNum", "hasBusBunching"))
+
+bb_per_route <- route_bus_trip_bb %>%
+  group_by(route, hasBusBunching) %>%
+  count()
+
+```
+
+```{r}
+bb_per_route %>%
+  ggplot(aes(x = route,
+             y = n, fill = hasBusBunching)) + 
+  geom_col(stat = 'identity', width = 10, binwidth = 0.5)
 
 ```
 
