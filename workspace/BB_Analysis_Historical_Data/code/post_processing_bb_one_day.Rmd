@@ -1,0 +1,128 @@
+---
+title: "bb_analysis"
+author: "Veruska Santos"
+date: "10 de novembro de 2018"
+output: html_document
+---
+Importando biblioteca do R a ser usada para ler os dados e manipulá-los.
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+
+```
+
+Carregando os dados que serão analisados.
+
+```{r read}
+gps_shape_data = read.csv(here::here("data/outputBusBunching/outputBusBunching-2017-04-30.csv"))
+
+```
+
+```{r}
+local_path ='D:/Desktop/UFCG/Projeto INES/INESProject/workspace/BB_Analysis_Historical_Data/'
+
+salvarCSV <- function (arquivo, nome){
+  write.csv(arquivo, paste(local_path, nome, ""), row.names=FALSE)
+}
+
+salvarCSV(bb_per_route, 'bb_per_route.csv')
+
+```
+
+```{r read}
+# Total of bb in each bus trip
+bb = gps_shape_data %>%
+  mutate(hasBB = busBunching != "")  %>%
+  group_by(date, route, tripNum, busCode, hasBB) %>%
+  count()
+
+# Removing column total of bus bunching
+tripHasBB = bb %>%
+  group_by(date, route, tripNum, busCode, hasBB) %>%
+  subset(select = -c(n))
+
+# Bus trip with bus bunching or not
+route_bus_trip_bb <- setNames(aggregate(tripHasBB$hasBB, by = list(tripHasBB$date, tripHasBB$route, tripHasBB$busCode, tripHasBB$tripNum), max), c("date", "route", "busCode", "tripNum", "hasBusBunching"))
+
+
+```
+
+## Statistical analysis
+
+- POR DIA
+- POR MÊS
+- POR DIA DA SEMANA
+- POR ROTA (geral) - OK
+- POR ônibus (geral)
+
+Total de trips - total de bb (porcentagem)
+
+
+### Por rota 
+
+```{r}
+# Total of bus bunching per route
+bb_per_route <- route_bus_trip_bb %>%
+  group_by(date, route) %>%
+  mutate(totalTrips = n()) %>% #total of trips
+  group_by(date, route, hasBusBunching) %>%
+  count(trips = n(), percTrips = trips/totalTrips) %>% #total of trips with bb
+  subset(select = -c(n))
+
+bb_per_route$hasBusBunching[bb_per_route$hasBusBunching == 1] <- "TRUE"
+bb_per_route$hasBusBunching[bb_per_route$hasBusBunching == 0] <- "FALSE"
+
+bb_per_route
+
+```
+
+```{r}
+salvarCSV(bb_per_route, 'bb_per_route.csv')
+
+```
+
+```{r}
+length(unique(bb_per_route$route))
+
+routes_with_bb <- bb_per_route %>%
+  filter(hasBusBunching == TRUE)
+
+length(unique(routes_with_bb$route))
+
+```
+---------------------------
+
+### Por ônibus 
+
+```{r}
+# Total of bus bunching per bus
+bb_per_bus <- route_bus_trip_bb %>%
+  group_by(date, busCode) %>%
+  mutate(totalTrips = n()) %>% # total of trips per bus
+  group_by(date, busCode, hasBusBunching) %>%
+  count(trips = n(), percTrips = trips/totalTrips) %>% #total of trips with bb
+  subset(select = -c(n))
+
+bb_per_bus$hasBusBunching[bb_per_bus$hasBusBunching == 1] <- "TRUE"
+bb_per_bus$hasBusBunching[bb_per_bus$hasBusBunching == 0] <- "FALSE"
+
+bb_per_bus
+
+```
+
+
+```{r}
+salvarCSV(bb_per_bus, 'bb_per_bus.csv')
+
+```
+
+```{r}
+length(unique(bb_per_bus$busCode))
+
+buses_with_bb <- bb_per_bus %>%
+  filter(hasBusBunching == TRUE)
+
+length(unique(buses_with_bb$busCode))
+
+```
