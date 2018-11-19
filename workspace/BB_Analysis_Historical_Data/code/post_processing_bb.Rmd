@@ -1,32 +1,33 @@
 ---
-title: "bb_analysis"
+title: "Post processing Bus Bunching output file"
 author: "Veruska Santos"
 date: "10 de novembro de 2018"
 output: html_document
 ---
+
+Processando o arquivo de saída que determina a ocorrência de BB para gerar os arquivos das visualizações.
+
 Importando biblioteca do R a ser usada para ler os dados e manipulá-los.
 
 ```{r setup, message=FALSE, warning=FALSE}
 library(tidyverse)
-library(ggplot2)
-
+library(stringr)
+library(tools)
 ```
 
 Carregando os dados que serão analisados.
 
 ```{r read}
-gps_shape_data = read.csv(here::here("data/outputBusBunching/outputBusBunching-2017-04-30.csv"))
+gps_shape_data = read.csv(here::here("data/outputBusBunching/outputBusBunching-allData.csv"))
 
 ```
 
 ```{r}
-local_path ='D:/Desktop/UFCG/Projeto INES/INESProject/workspace/BB_Analysis_Historical_Data/'
+local_path = paste(file_path_as_absolute(".."), "/data/outputBusBunching/rPostProcessing/", sep = "")
 
-salvarCSV <- function (arquivo, nome){
-  write.csv(arquivo, paste(local_path, nome, ""), row.names=FALSE)
+saveCSV <- function (file, name){
+  write.csv(file, paste(local_path, name, ""), row.names=FALSE)
 }
-
-salvarCSV(bb_per_route, 'bb_per_route.csv')
 
 ```
 
@@ -44,8 +45,6 @@ tripHasBB = bb %>%
 
 # Bus trip with bus bunching or not
 route_bus_trip_bb <- setNames(aggregate(tripHasBB$hasBB, by = list(tripHasBB$date, tripHasBB$route, tripHasBB$busCode, tripHasBB$tripNum), max), c("date", "route", "busCode", "tripNum", "hasBusBunching"))
-
-
 ```
 
 ## Statistical analysis
@@ -53,20 +52,18 @@ route_bus_trip_bb <- setNames(aggregate(tripHasBB$hasBB, by = list(tripHasBB$dat
 - POR DIA
 - POR MÊS
 - POR DIA DA SEMANA
+- POR HORA - OK
 - POR ROTA (geral) - OK
-- POR ônibus (geral)
-
-Total de trips - total de bb (porcentagem)
-
+- POR ônibus (geral) - OK
 
 ### Por rota 
 
 ```{r}
 # Total of bus bunching per route
 bb_per_route <- route_bus_trip_bb %>%
-  group_by(date, route) %>%
+  group_by(route) %>%
   mutate(totalTrips = n()) %>% #total of trips
-  group_by(date, route, hasBusBunching) %>%
+  group_by(route, hasBusBunching) %>%
   count(trips = n(), percTrips = trips/totalTrips) %>% #total of trips with bb
   subset(select = -c(n))
 
@@ -78,7 +75,7 @@ bb_per_route
 ```
 
 ```{r}
-salvarCSV(bb_per_route, 'bb_per_route.csv')
+saveCSV(bb_per_route, 'bb_per_route-allData.csv')
 
 ```
 
@@ -98,9 +95,9 @@ length(unique(routes_with_bb$route))
 ```{r}
 # Total of bus bunching per bus
 bb_per_bus <- route_bus_trip_bb %>%
-  group_by(date, busCode) %>%
+  group_by(busCode) %>%
   mutate(totalTrips = n()) %>% # total of trips per bus
-  group_by(date, busCode, hasBusBunching) %>%
+  group_by(busCode, hasBusBunching) %>%
   count(trips = n(), percTrips = trips/totalTrips) %>% #total of trips with bb
   subset(select = -c(n))
 
@@ -111,9 +108,8 @@ bb_per_bus
 
 ```
 
-
 ```{r}
-salvarCSV(bb_per_bus, 'bb_per_bus.csv')
+salvarCSV(bb_per_bus, 'bb_per_bus-allData.csv')
 
 ```
 
@@ -125,4 +121,53 @@ buses_with_bb <- bb_per_bus %>%
 
 length(unique(buses_with_bb$busCode))
 
+```
+
+-----------------------------------------
+
+### Por hora do dia e rota
+
+```{r read}
+
+# Get hour
+gps_shape_data$time <- str_split_fixed(gps_shape_data$time, ":", 2)[,1]
+
+# Total of bb in each bus trip
+bb_per_hour = gps_shape_data %>%
+  mutate(hasBB = busBunching != "")  %>%
+  group_by(route, tripNum, busCode, time, hasBB) %>%
+  count()
+
+# Removing column total of bus bunching
+trip_has_BB_per_hour = bb_per_hour %>%
+  group_by(route, tripNum, busCode, time, hasBB) %>%
+  subset(select = -c(n))
+
+# Bus trip with bus bunching or not
+day_route_bus_trip_time_bb <- setNames(aggregate(trip_has_BB_per_hour$hasBB, by = list(trip_has_BB_per_hour$route, trip_has_BB_per_hour$busCode, trip_has_BB_per_hour$tripNum, trip_has_BB_per_hour$time), max), c("route", "busCode", "tripNum", "time", "hasBusBunching"))
+
+
+# Total of bus bunching per route and hour
+trips_per_route_and_hour <- day_route_bus_trip_time_bb %>%
+  group_by(route, time) %>%
+  mutate(totalTrips = n()) %>% #total of trips
+  group_by(route, time, hasBusBunching) %>%
+  count(trips = n(), percTrips = trips/totalTrips) %>% #total of trips with bb
+  subset(select = -c(n))
+
+trips_per_route_and_hour$hasBusBunching[trips_per_route_and_hour$hasBusBunching == 1] <- "TRUE"
+trips_per_route_and_hour$hasBusBunching[trips_per_route_and_hour$hasBusBunching == 0] <- "FALSE"
+
+# Calculate percentagem of trips with BB
+bb_per_route_and_hour <- trips_per_route_and_hour %>%
+  filter(hasBusBunching == "FALSE") %>%
+  mutate(percTripsWithBB = 1 - percTrips)
+
+names(bb_per_route_and_hour)[names(bb_per_route_and_hour) == 'percTrips'] <- 'percTripsWithoutBB'
+bb_per_route_and_hour$hasBusBunching <- TRUE
+
+```
+
+```{r}
+saveCSV(bb_per_route_and_hour, 'bb_per_route_and_hour-allData.csv')
 ```
