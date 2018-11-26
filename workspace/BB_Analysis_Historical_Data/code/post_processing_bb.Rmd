@@ -109,7 +109,7 @@ bb_per_bus
 ```
 
 ```{r}
-salvarCSV(bb_per_bus, 'bb_per_bus-allData.csv')
+saveCSV(bb_per_bus, 'bb_per_bus-allData.csv')
 
 ```
 
