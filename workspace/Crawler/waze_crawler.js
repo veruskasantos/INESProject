@@ -19,6 +19,10 @@ if (argsList.length < 2) {
 
 setInterval(function () {
 
+	date = new Date()
+	current_data = date.toString().slice(0, 24)
+	current_data_day = date.getDate() + '-' + (date.getMonth()+1) + '-' + date.getUTCFullYear()
+	
 	argsList.forEach(function (arg, index, array) {
 		(async () => {
 
@@ -41,7 +45,7 @@ setInterval(function () {
 										const types = ['jams', 'alerts'];
 
 										types.forEach((collection_type) => {
-											let collection = db.collection(`waze_${city}_${collection_type}`);
+											let collection = db.collection(`waze_${city}_${collection_type}_${current_data_day}`);
 											if (resp[collection_type] !== undefined && resp[collection_type] !== null) {
 												resp[collection_type] = resp[collection_type].filter((el) => {
 													return (el !== (undefined || null || ''));
@@ -65,7 +69,6 @@ setInterval(function () {
 					}
 				});
 
-				current_data = new Date().toString().slice(0, 24)
 				console.log('Getting data: ' + arg + ' - ' + current_data)
 
 				await page.setViewport({width: 1280, height: 1200, deviceScaleFactor: 1});
