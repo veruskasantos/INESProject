@@ -4,6 +4,7 @@
 var mongo = require('mongodb').MongoClient;
 var assert = require('assert');
 const fs = require('fs');
+const json2csv = require('json2csv').parse;
 
 var url = 'mongodb://127.0.0.1:27017'
 const dbName = 'waze_data';
@@ -29,7 +30,8 @@ mongo.connect(url, function(err, client) {
 			}, function() {
 				db.close;
 				//save file
-				fs.writeFile("data/waze_data/" + collectionName, JSON.stringify(resultArray), function(err) {
+				fs.writeFile("data/waze_data/" + collectionName + ".csv", convertJSON2CSV(resultArray),
+				 function(err) {
 					assert.equal(null, err);
 					console.log("The file was saved!");
 				});
@@ -40,3 +42,18 @@ mongo.connect(url, function(err, client) {
 	});
 
 })
+
+
+function convertJSON2CSV(data) {
+	const fields = ['_id', 'severity', 'country', 'city', 'level', 'line', 'speedKMH', 'length', 
+	'turnType','type', 'uuid', 'endNode', 'speed', 'segments', 'roadType', 'delay', 'updateMillis', 
+	'street', 'id', 'pubMillis'];
+	const opts = { fields };
+
+	try {
+	  const csv = json2csv(data, opts);
+	  return csv
+	} catch (err) {
+	  console.error(err);
+	}
+}

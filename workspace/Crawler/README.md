@@ -1,5 +1,6 @@
 To start MondoDB, run in terminal:
--> sudo service mongod start
+-> sudo service mongod start (Ubuntu)
+-> mongod.exe (Windows)
 
 To start crawler of traffic data, run in terminal:
 -> node waze_crawler.js <name_of_the_cities>
