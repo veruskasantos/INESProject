@@ -1,5 +1,5 @@
-//Script to get waze data from mongodb and to save as CSV in local path
-// Run get_waze_data.js
+// Script to get waze data from mongodb and to save as CSV in local path
+// Run node get_waze_data.js <name_database>
 
 var mongo = require('mongodb').MongoClient;
 var assert = require('assert');
@@ -7,7 +7,14 @@ const fs = require('fs');
 const json2csv = require('json2csv').parse;
 
 var url = 'mongodb://127.0.0.1:27017'
-const dbName = 'waze_data';
+
+argsList = process.argv.slice(2)
+if (argsList.length < 1) {
+	console.log('You should run: node <script_name.js> <name_database>')
+	process.exit(1)
+}
+
+var dbName = argsList[0];
 
 var resultArray = [];
 mongo.connect(url, function(err, client) {
@@ -30,7 +37,7 @@ mongo.connect(url, function(err, client) {
 			}, function() {
 				db.close;
 				//save file
-				fs.writeFile("data/waze_data/" + collectionName + ".csv", convertJSON2CSV(resultArray),
+				fs.writeFile("data/" + dbName + "/" + collectionName + ".csv", convertJSON2CSV(resultArray),
 				 function(err) {
 					assert.equal(null, err);
 					console.log("The file was saved!");
@@ -44,11 +51,21 @@ mongo.connect(url, function(err, client) {
 })
 
 
-function convertJSON2CSV(data) {
-	const fields = ['_id', 'severity', 'country', 'city', 'level', 'line', 'speedKMH', 'length', 
+function convertJSON2CSV(data, dbName) {
+	const fields_waze = ['_id', 'severity', 'country', 'city', 'level', 'line', 'speedKMH', 'length', 
 	'turnType','type', 'uuid', 'endNode', 'speed', 'segments', 'roadType', 'delay', 'updateMillis', 
 	'street', 'id', 'pubMillis'];
-	const opts = { fields };
+
+	const fields_gps = ['id' , 'stopSequence', 'diffLastUpdate', 'bearing', 'vehicleLabel', 'stopId', 'lon', 
+	'tripId', 'positionTime', 'routeId', 'delay', 'arrivalTime', 'vehicleId', 'tripStartTime', 'tripHash',
+	'percTravel', 'lat'];
+
+	var opts = ''
+	if (dbName == 'waze_data') {
+		opts = { fields_waze };
+	} else {
+		opts = { fields_gps };
+	}
 
 	try {
 	  const csv = json2csv(data, opts);

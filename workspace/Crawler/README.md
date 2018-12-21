@@ -15,5 +15,5 @@ To see data in MongoDB, run:
 -> show databases
 -> use waze_data
 -> show collections
--> db.waze_ctb_alerts.find() (to see data in terminal)
+-> db.waze_ctb_alerts.find() (to see data in terminal) or db["GPS-CampinaGrande-21-12-2018"].find()
 -> 
