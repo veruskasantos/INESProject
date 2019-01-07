@@ -1,5 +1,6 @@
 // Script to run Waze Crawler
-// Run node waze_crawler.js <name_of_the_cities>
+// Run node waze_crawler.js <interval_in_minutes> <name_of_the_cities>
+// Ex: node waze_crawler.js 5 Curitiba Recife Campina-Grande
 
 const puppeteer = require('puppeteer');
 const MongoClient = require('mongodb').MongoClient;
