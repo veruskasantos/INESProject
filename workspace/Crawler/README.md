@@ -4,6 +4,10 @@ To start MondoDB, run in terminal:
 
 To start crawler of traffic data, run in terminal:
 -> node waze_crawler.js <name_of_the_cities>
+Ex: node waze_crawler.js 5 Curitiba Recife Campina-Grande
+
+To start crawler of CG GPS data, run in terminal:
+-> java -jar cg_gps_crawler.jar 30
 
 When finished Crawler, stop MongoDB:
 -> sudo service mongod stop
