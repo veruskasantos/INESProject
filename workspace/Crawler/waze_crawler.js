@@ -75,34 +75,34 @@ setInterval(function () {
 				await page.setViewport({width: 1280, height: 1200, deviceScaleFactor: 1});
 				await page.goto('https://www.waze.com/pt-BR/livemap');
 
-				  //name of the input the receive the text
-				  let txt = "input[class='wm-search__input']"
-				  await page.waitFor(txt);
-				  await page.focus(txt);
-				  
-				  //coordinates does not work anymore with waze
-				  await page.evaluate(() => {
-				  	document.querySelector("input[class='wm-search__input']").value = ''
-				  });
+				//name of the input to receive the text
+				let txt = "input[class='wm-search__input']"
+				await page.waitFor(txt);
+				await page.focus(txt);
 
-				  await page.type(txt, city, {delay: 10});
-				  await page.waitFor(500);
-				  await page.keyboard.press('ArrowDown');
-				  await page.waitFor(500);
-				  await page.keyboard.press('Enter');
-				  await page.waitFor(1500);
+				// coordinates does not work anymore with waze
+				// await page.evaluate(() => {
+				// 	document.querySelector("input[class='wm-search__input']").value = 'Curitiba'
+				// 	});
 
-				  let zoomOut = 'a.leaflet-control-zoom-out';
-				  
-				  // ajustando a visão do mapa para pegar o máximo possível
-				  if (city == 'Curitiba') {
+				await page.click("#map > div > div > div > div > div > div > input[class='wm-search__input']")
+
+				await page.type(txt, city, {delay: 100});
+				await page.waitFor(500);
+				await page.keyboard.press('ArrowDown');
+				await page.waitFor(500);
+				await page.keyboard.press('Enter');
+				await page.waitFor(1000);
+
+				let zoomOut = 'a.leaflet-control-zoom-out';
+
+				// ajustando a visão do mapa para pegar o máximo possível
+				if (city == 'Curitiba') {
 				  	await page.click(zoomOut);
 				  	await page.waitFor(500);
 				  	await page.click(zoomOut);
 				  	await page.waitFor(500);
 				  	await page.click(zoomOut);
-				  	await page.waitFor(500);
-				  	await page.keyboard.press('ArrowDown')
 				  	await page.waitFor(500);
 				  	await page.keyboard.press('ArrowDown')
 				  	await page.waitFor(500);
@@ -123,7 +123,9 @@ setInterval(function () {
 				  	await page.waitFor(500);
 				  	await page.click(zoomOut);
 				  	await page.waitFor(500);
-				  	await page.keyboard.press('ArrowUp')
+				  	await page.keyboard.press('ArrowLeft')
+				  	await page.waitFor(500);
+				  	await page.keyboard.press('ArrowLeft')
 
 				  	console.log('Saving ' + city)
 				  	saveData = true
@@ -133,6 +135,10 @@ setInterval(function () {
 				  	await page.click(zoomOut);
 				  	await page.waitFor(500);
 				  	await page.click(zoomOut);
+				  	await page.waitFor(500);
+				  	await page.keyboard.press('ArrowLeft')
+				  	await page.waitFor(500);
+				  	await page.keyboard.press('ArrowDown')
 
 				  	console.log('Saving' + city)
 				  	saveData = true
