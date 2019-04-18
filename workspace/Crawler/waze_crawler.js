@@ -32,6 +32,7 @@ setInterval(function () {
 				var city = arg
 				var saveData = false
 
+				//to see browser execution: headless: false
 				let browser = await puppeteer.launch({headless: true});
 				const page = await browser.newPage();
 
@@ -85,19 +86,28 @@ setInterval(function () {
 				// 	document.querySelector("input[class='wm-search__input']").value = 'Curitiba'
 				// 	});
 
-				await page.click("#map > div > div > div > div > div > div > input[class='wm-search__input']")
-
+				await page.click("#map > div > div > div > div > div > input[class='wm-search__input']")
 				await page.type(txt, city, {delay: 100});
 				await page.waitFor(500);
-				await page.keyboard.press('ArrowDown');
-				await page.waitFor(500);
-				await page.keyboard.press('Enter');
-				await page.waitFor(1000);
+
+				// curitiba: ChIJ3bPNUVPj3JQRCejLuqVrL20
+				// recife: ChIJ5UbEiG8ZqwcR1H9EIin1njw
+				// cg: ChIJhRwgQ18erAcRUa-mOuxqZck
+				// wm-search__dropdown > wm-search_item / ul > li
+
+				// await page.keyboard.press('ArrowDown');
+				// await page.waitFor(500);
+				// await page.keyboard.press('Enter');
+				// await page.waitFor(1000);
 
 				let zoomOut = 'a.leaflet-control-zoom-out';
 
 				// ajustando a visão do mapa para pegar o máximo possível
 				if (city == 'Curitiba') {
+					const elementHandle = await page.$('[data-value="ChIJ3bPNUVPj3JQRCejLuqVrL20"]');
+					await elementHandle.click();
+					await page.waitFor(1000);
+
 				  	await page.click(zoomOut);
 				  	await page.waitFor(500);
 				  	await page.click(zoomOut);
@@ -117,6 +127,10 @@ setInterval(function () {
 				  	await page.waitFor(2000);
 
 				  } else if (city == 'Recife') {
+				  	const elementHandle = await page.$('[data-value="ChIJ5UbEiG8ZqwcR1H9EIin1njw"]');
+					await elementHandle.click();
+					await page.waitFor(1000);
+
 				  	await page.click(zoomOut);
 				  	await page.waitFor(500);
 				  	await page.click(zoomOut);
@@ -132,6 +146,10 @@ setInterval(function () {
 				  	await page.waitFor(2000);
 
 				  } else if (city == 'Campina-Grande') {
+				  	const elementHandle = await page.$('[data-value="ChIJhRwgQ18erAcRUa-mOuxqZck"]');
+					await elementHandle.click();
+					await page.waitFor(1000);
+
 				  	await page.click(zoomOut);
 				  	await page.waitFor(500);
 				  	await page.click(zoomOut);

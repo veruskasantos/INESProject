@@ -138,7 +138,7 @@ bb_per_hour = gps_shape_data %>%
   group_by(route, tripNum, busCode, time, hasBB) %>%
   count()
 
-# Removing column total of bus bunching
+# Removing column total of bus bunching because we want at least one occurrence
 trip_has_BB_per_hour = bb_per_hour %>%
   group_by(route, tripNum, busCode, time, hasBB) %>%
   subset(select = -c(n))
