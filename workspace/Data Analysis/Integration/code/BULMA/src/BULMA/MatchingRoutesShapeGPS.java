@@ -36,6 +36,7 @@ import com.vividsolutions.jts.geom.Point;
 import BULMADependences.GPSLine;
 import BULMADependences.GeoLine;
 import BULMADependences.PossibleShape;
+import BULMADependences.PreProcessingBULMAInput;
 import BULMADependences.Problem;
 import BULMADependences.ShapeLine;
 import BULMADependences.Trip;
@@ -43,6 +44,20 @@ import PointDependencies.GPSPoint;
 import PointDependencies.GeoPoint;
 import PointDependencies.ShapePoint;
 import scala.Tuple2;
+
+/**
+ * 
+ * Matching GPS with Shape, i.e., identifying which shape the bus is running.
+ * Besides this, matching each gps point with the closest shape point and separate the trips.
+ * 
+ * Some cities, like Curitiba, has multiple shapes for the same route
+ *
+ * @input GPS: bus.code, latitude, longitude, timestamp, line.code, gps.id
+ * 		  GTFS: shapes.txt (preprocessed with route)
+ *
+ * @return trip_number/no_shape_code, route, shape_id/-, route_frequency/-, shape_sequence/-, shape_lat/-, shape_lon/-, 
+ * 			gps_id, bus_code, gps_timestamp, gps_lat, gps_lon, distance_to_shape_point/-, threshold_distance/-, trip_problem_code
+ */
 
 public class MatchingRoutesShapeGPS {
 
@@ -62,45 +77,54 @@ public class MatchingRoutesShapeGPS {
 
 		Long initialTime = System.currentTimeMillis();
 
-		String pathFileShapes = args[0];
-		String pathGPSFile = args[1];
-		String pathOutput = args[2];
-		int minPartitions = Integer.valueOf(args[3]);
+		String city = args[0];
+		String pathFileShapes = args[1];
+		String pathGPSFile = args[2];
+		String pathOutput = args[3];
+		int minPartitions = Integer.valueOf(args[4]);
 
 		SparkConf sparkConf = new SparkConf().setAppName("BULMA").setMaster("local");
 //		SparkConf sparkConf = new SparkConf().setAppName("BULMA"); // to run on cluster
 		JavaSparkContext context = new JavaSparkContext(sparkConf);
 
-		generateOutputFiles(pathFileShapes, pathGPSFile, pathOutput, minPartitions, context);
+		generateOutputFiles(city, pathFileShapes, pathGPSFile, pathOutput, minPartitions, context);
 
 		context.stop();
 		context.close();
 		System.out.println("Execution time: " + TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - initialTime) + " min");
 	}
 
-	private static void generateOutputFiles(String pathFileShapes, String pathGPSFiles, String pathOutput,
+	private static void generateOutputFiles(String city, String pathFileShapes, String pathGPSFiles, String pathOutput,
 			int minPartitions, JavaSparkContext context) throws IOException, URISyntaxException {
 
 		Configuration conf = new Configuration();
 		FileSystem fs = FileSystem.get(new URI(pathGPSFiles), conf);
 		FileStatus[] fileStatus = fs.listStatus(new Path(pathGPSFiles));
 
+		// Adding route id and route frequency to each shape
+		PreProcessingBULMAInput.updateShapeFile(pathFileShapes, city);
+		
 		for (FileStatus file : fileStatus) {
-			JavaRDD<String> rddOutputBuLMA = executeBULMA(pathFileShapes, pathGPSFiles + file.getPath().getName(),
-					minPartitions, context);
 			
-//			JavaPairRDD<String, Iterable<GeoPoint>> rddOutputBuLMA = executeBULMA(pathFileShapes, pathGPSFiles + file.getPath().getName(),
-//					minPartitions, context);
+			if (!file.getPath().getName().contains("preprocessed_")) {
+				// Standardizing GPS data input, sorting and adding gps id
+				PreProcessingBULMAInput.filterGPSData(pathGPSFiles + file.getPath().getName(), city);
+				
+				JavaRDD<String> rddOutputBuLMA = executeBULMA(pathFileShapes, pathGPSFiles + "preprocessed_" + file.getPath().getName(), 
+						minPartitions, context);
+//				JavaPairRDD<String, Iterable<GeoPoint>> rddOutputBuLMA = executeBULMA(pathFileShapes, pathGPSFilesPreProcessed + file.getPath().getName(),
+//						minPartitions, context);
 
-			rddOutputBuLMA.saveAsTextFile(pathOutput + SLASH
-					+ file.getPath().getName().substring(0, file.getPath().getName().lastIndexOf(".csv")));
+				rddOutputBuLMA.saveAsTextFile(pathOutput + SLASH
+						+ file.getPath().getName().substring(0, file.getPath().getName().lastIndexOf(".csv")));
+			}
 		}
 	}
 
 	@SuppressWarnings("serial")
 	private static JavaRDD<String> executeBULMA(String pathFileShapes, String pathGPSFile, int minPartitions,
 			JavaSparkContext ctx) {
-
+		
 		Function2<Integer, Iterator<String>, Iterator<String>> removeHeader = new Function2<Integer, Iterator<String>, Iterator<String>>() {
 
 			public Iterator<String> call(Integer index, Iterator<String> iterator) throws Exception {
@@ -115,7 +139,7 @@ public class MatchingRoutesShapeGPS {
 
 		JavaRDD<String> gpsString = ctx.textFile(pathGPSFile, minPartitions).mapPartitionsWithIndex(removeHeader,
 				false);
-		JavaRDD<String> shapeString = ctx.textFile(pathFileShapes, minPartitions).mapPartitionsWithIndex(removeHeader,
+		JavaRDD<String> shapeString = ctx.textFile(pathFileShapes + "shapes.csv", minPartitions).mapPartitionsWithIndex(removeHeader,
 				false);
 
 		JavaPairRDD<String, Iterable<GeoPoint>> rddGPSPointsPair = gpsString
@@ -809,6 +833,7 @@ public class MatchingRoutesShapeGPS {
 									stringOutput += "-" + FILE_SEPARATOR;
 									stringOutput += "-" + FILE_SEPARATOR;
 									stringOutput += "-" + FILE_SEPARATOR;
+									stringOutput += "-" + FILE_SEPARATOR;
 
 									stringOutput += gpsPoint.getGpsId() + FILE_SEPARATOR;
 									stringOutput += gpsPoint.getBusCode() + FILE_SEPARATOR;
@@ -839,8 +864,10 @@ public class MatchingRoutesShapeGPS {
 											stringOutput += "-" + FILE_SEPARATOR;
 											stringOutput += "-" + FILE_SEPARATOR;
 											stringOutput += "-" + FILE_SEPARATOR;
+											stringOutput += "-" + FILE_SEPARATOR;
 										} else {
 											stringOutput += gpsPoint.getClosestPoint().getId() + FILE_SEPARATOR;
+											stringOutput += gpsPoint.getClosestPoint().getRouteFrequency() + FILE_SEPARATOR;
 											stringOutput += gpsPoint.getClosestPoint().getPointSequence()
 													+ FILE_SEPARATOR;
 											stringOutput += gpsPoint.getClosestPoint().getLatitude() + FILE_SEPARATOR;

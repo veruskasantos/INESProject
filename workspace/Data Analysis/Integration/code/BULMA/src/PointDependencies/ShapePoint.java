@@ -13,6 +13,7 @@ public class ShapePoint extends GeoPoint {
 	private String pointSequence;
 	private String distanceTraveled;
 	private String route;
+	private String routeFrequency;
 	private List<String> listStopTimestamp;
 
 	public ShapePoint(String id, String latitude, String longitude, String pointSequence, String distanceTraveled) {
@@ -23,10 +24,19 @@ public class ShapePoint extends GeoPoint {
 		this.listStopTimestamp = new ArrayList<String>();
 	}
 
+	// with distanceTraveled
 	public ShapePoint(String route, String id, String latitude, String longitude, String pointSequence,
 			String distanceTraveled) {
 		this(id, latitude, longitude, pointSequence, distanceTraveled);
 		this.route = route;
+	}
+	
+	// with distanceTraveled and routeFrequency
+	public ShapePoint(String route, String id, String latitude, String longitude, String pointSequence,
+			String distanceTraveled, String routeFrequency) {
+		this(id, latitude, longitude, pointSequence, distanceTraveled);
+		this.route = route;
+		this.routeFrequency = routeFrequency;
 	}
 
 	public ShapePoint() {
@@ -51,6 +61,7 @@ public class ShapePoint extends GeoPoint {
 				st.nextToken().replace("\"", ""),
 				st.nextToken().replace("\"", ""), 
 				st.nextToken().replace("\"", ""), 
+				st.nextToken().replace("\"", ""),
 				st.nextToken().replace("\"", ""),
 				st.nextToken().replace("\"", ""));
 	}
@@ -102,6 +113,14 @@ public class ShapePoint extends GeoPoint {
 		this.route = route;
 	}
 
+	public String getRouteFrequency() {
+		return routeFrequency;
+	}
+
+	public void setRouteFrequency(String routeFrequency) {
+		this.routeFrequency = routeFrequency;
+	}
+	
 	public List<String> getListStopTimestamp() {
 		return listStopTimestamp;
 	}
