@@ -213,7 +213,7 @@ public class PossibleShape implements Serializable, Comparable<PossibleShape> {
 
 	@Override
 	public String toString() {
-		return "PossibleShape (" + getFirstGPSPoints() + getLastGPSPoints()+ ")";
+		return "PossibleShape (FirstGPSPoints: " + getFirstGPSPoints().size() + " LastGPSPoints: " + getLastGPSPoints().size() + ")";
 	}
 	
 	public int compareTo(PossibleShape otherShape) {

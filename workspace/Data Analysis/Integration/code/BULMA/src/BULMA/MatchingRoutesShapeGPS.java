@@ -63,7 +63,11 @@ public class MatchingRoutesShapeGPS {
 
 	// to separate trips, when no gps point was send
 	private static final double THRESHOLD_TIME = 600000; // 20 minutes
-	private static final double PERCENTAGE_DISTANCE = 0.09; // to consider outlier point
+	
+	// threshold to identify outliers and to identify initial and final points based on greater distance and shape points 
+	private static final double PERCENTAGE_DISTANCE_CURITIBA = 0.09; 
+	private static final int PERCENTAGE_DISTANCE_CG = 100; // meters
+	
 	private static final String FILE_SEPARATOR = ",";
 	private static final String SLASH = "/";
 
@@ -71,16 +75,17 @@ public class MatchingRoutesShapeGPS {
 
 		if (args.length < 4) {
 			System.err.println(
-					"Usage: <shape file> <directory of GPS files> <directory of output path> <number of partitions>");
+					"Usage: <shape file> <directory of GPS files> <directory of output path> <number of partitions>\n"
+					+ "Ex: CampinaGrande data/gtfs/ data/gps/ data/output/ 1");
 			System.exit(1);
 		}
 
 		Long initialTime = System.currentTimeMillis();
 
 		String city = args[0];
-		String pathFileShapes = args[1];
-		String pathGPSFile = args[2];
-		String pathOutput = args[3];
+		String pathFileShapes = args[1] + city + "/";
+		String pathGPSFile = args[2] + city + "/";
+		String pathOutput = args[3] + city + "/";
 		int minPartitions = Integer.valueOf(args[4]);
 
 		SparkConf sparkConf = new SparkConf().setAppName("BULMA").setMaster("local");
@@ -111,7 +116,9 @@ public class MatchingRoutesShapeGPS {
 				PreProcessingBULMAInput.filterGPSData(pathGPSFiles + file.getPath().getName(), city);
 				
 				JavaRDD<String> rddOutputBuLMA = executeBULMA(pathFileShapes, pathGPSFiles + "preprocessed_" + file.getPath().getName(), 
-						minPartitions, context);
+						minPartitions, context, city);
+				
+				
 //				JavaPairRDD<String, Iterable<GeoPoint>> rddOutputBuLMA = executeBULMA(pathFileShapes, pathGPSFilesPreProcessed + file.getPath().getName(),
 //						minPartitions, context);
 
@@ -123,7 +130,7 @@ public class MatchingRoutesShapeGPS {
 
 	@SuppressWarnings("serial")
 	private static JavaRDD<String> executeBULMA(String pathFileShapes, String pathGPSFile, int minPartitions,
-			JavaSparkContext ctx) {
+			JavaSparkContext ctx, final String city) {
 		
 		Function2<Integer, Iterator<String>, Iterator<String>> removeHeader = new Function2<Integer, Iterator<String>, Iterator<String>>() {
 
@@ -271,6 +278,7 @@ public class MatchingRoutesShapeGPS {
 
 		JavaPairRDD<String, Iterable<GeoLine>> rddGroupedUnionLines = rddGPSLinePair.union(rddShapeLinePair)
 				.groupByKey(minPartitions);
+		
 
 		JavaRDD<Tuple2<GPSLine, List<PossibleShape>>> rddPossibleShapes = rddGroupedUnionLines.flatMap(
 				new FlatMapFunction<Tuple2<String, Iterable<GeoLine>>, Tuple2<GPSLine, List<PossibleShape>>>() {
@@ -309,10 +317,17 @@ public class MatchingRoutesShapeGPS {
 
 							List<PossibleShape> listPossibleShapes = new LinkedList<PossibleShape>();
 							for (ShapeLine shapeLine : shapeLineList) {
+								
 								thresholdDistanceCurrentShape = (int) (shapeLine.getDistanceTraveled()
-										/ (shapeLine.getListGeoPoints().size() * PERCENTAGE_DISTANCE));
+										/ (shapeLine.getListGeoPoints().size() * PERCENTAGE_DISTANCE_CURITIBA));
+								
+								// greater distance between shapes points is less in campina grande, around 25
+								if (city.equals("CampinaGrande")) {
+									thresholdDistanceCurrentShape = (int) (shapeLine.getListGeoPoints().size() * PERCENTAGE_DISTANCE_CURITIBA);
+								}
+								
 								shapeLine.setThresholdDistance(thresholdDistanceCurrentShape);
-
+								
 								blockingKeyFromTime = null;
 								possibleShape = new PossibleShape(gpsLine.getListGeoPoints(), shapeLine);
 								firstPointGPS = (GPSPoint) gpsLine.getListGeoPoints().get(0);
@@ -337,6 +352,8 @@ public class MatchingRoutesShapeGPS {
 										currentDistanceToEndPoint = possibleShape
 												.getDistanceInMetersToEndPointShape(currentPoint);
 
+//										System.out.println(currentDistanceToStartPoint + " " + thresholdDistanceCurrentShape);
+										
 										if (currentDistanceToStartPoint < thresholdDistanceCurrentShape) {
 
 											if (blockingKeyFromTime == null
@@ -906,7 +923,10 @@ public class MatchingRoutesShapeGPS {
 					}
 				});
 
+		
 		return rddOutput;
+		
+		
 //		return rddGPSPointsPair;
 	}
 

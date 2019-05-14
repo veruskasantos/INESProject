@@ -19,6 +19,7 @@ public class GPSLine extends GeoLine {
 	private List<PossibleShape> listPossibleShapeLines;
 	private Map<Integer, List<Trip>> mapTrips;
 
+	// id = busCode
 	public GPSLine(String id, LineString line, String blockingKey) {
 		super(id, line, blockingKey);
 		this.listPossibleShapeLines = new ArrayList<PossibleShape>();
@@ -318,8 +319,11 @@ public class GPSLine extends GeoLine {
 		List<PossibleShape> possibleShapeCurrentGPS = new ArrayList<PossibleShape>();
 		possibleShapeCurrentGPS.add(bestShape);
 		setListPossibleShapeLines(possibleShapeCurrentGPS);
-
-
-		
+	}
+	
+	
+	@Override
+	public String toString() {
+		return "GPS Line - " + super.toString();
 	}
 }

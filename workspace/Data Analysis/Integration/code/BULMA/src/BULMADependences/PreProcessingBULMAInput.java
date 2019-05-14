@@ -49,6 +49,7 @@ public class PreProcessingBULMAInput {
 	
 	/**
 	 * Add route id and frequency to shapes.txt file
+	 * TODO: write this code in jupyter notebook
 	 */
 	public static void updateShapeFile(String filePath, String city) {
 		String shapePath = filePath + "shapes.txt";
@@ -84,8 +85,17 @@ public class PreProcessingBULMAInput {
 			String route = attributes[0];
 			String frequency = attributes[8];
 			
-			if (!routeFrequencyMap.containsKey(route)) {
-				routeFrequencyMap.put(route, frequency);
+			if (city.equals("CampinaGrande")) { //the gps data route is route_short_name
+				String route_gps = attributes[2]; //route_short_name
+				
+				if (!routeFrequencyMap.containsKey(route)) {
+					routeFrequencyMap.put(route, frequency + "-" + route_gps);
+				}
+				
+			} else {
+				if (!routeFrequencyMap.containsKey(route)) {
+					routeFrequencyMap.put(route, frequency);
+				}
 			}
 		}
 				
@@ -101,11 +111,23 @@ public class PreProcessingBULMAInput {
 				route = routeShapeMap.get(shapeID);
 			}
 			
-			if (routeFrequencyMap.containsKey(route)) {
-				frequency = routeFrequencyMap.get(route);
-			}
-			
 			String newLine = route + DELIMITER + shape + DELIMITER + frequency;
+			
+			if (routeFrequencyMap.containsKey(route)) {
+				
+				if (city.equals("CampinaGrande")) {
+					String[] frequency_route = routeFrequencyMap.get(route).split("-");
+					frequency = frequency_route[0];
+					String route_id = frequency_route[1];
+					
+					newLine = route_id + DELIMITER + shape + DELIMITER + frequency;
+					
+				} else {
+					frequency = routeFrequencyMap.get(route);
+					
+					newLine = route + DELIMITER + shape + DELIMITER + frequency;
+				}
+			}
 			
 			newShapeFile.add(newLine);
 		}
@@ -128,7 +150,7 @@ public class PreProcessingBULMAInput {
 			String busCode = attributes[12]; //vehicleId
 			String latitude = attributes[16];
 			String longitude = attributes[6];
-			String timestamp = attributes[8]; //positionTime
+			String timestamp = attributes[8].split(" ")[1]; // positionTime: to get just the time
 			String route = attributes[9]; //routeId
 			int gpsID = ++gpsIDCount;
 			
@@ -233,6 +255,6 @@ public class PreProcessingBULMAInput {
 			e.printStackTrace();
 		} 
 		
-		System.out.println("Finishing gps preprocessing. Lines: " + data.size());
+		System.out.println("Saving new file. Lines: " + data.size());
 	}
 }

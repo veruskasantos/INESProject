@@ -87,7 +87,7 @@ public class GeoLine implements Serializable {
 
 	@Override
 	public String toString() {
-		return "GeoLine [id=" + id + ", line=" + line + ", blockingKey=" + blockingKey + ", listGeoPoints="
-				+ listGeoPoints + "]";
+		return "GeoLine [id=" + id + ", blockingKey=" + blockingKey + ", listGeoPoints_size="
+				+ listGeoPoints.size() + "]";
 	}
 }

@@ -24,7 +24,7 @@ public class GPSPoint extends GeoPoint {
 	public GPSPoint(String busCode, String latitude, String longitude, String timeStamp, String lineCode) {
 		super(latitude, longitude);
 		this.busCode = busCode;
-		this.timeStamp = timeStamp.replace(" ", "");
+		this.timeStamp = timeStamp.replace(" ", "").replace("\"", "");
 		this.lineCode = lineCode;
 		this.problem = Problem.NO_PROBLEM.getCode();
 	}

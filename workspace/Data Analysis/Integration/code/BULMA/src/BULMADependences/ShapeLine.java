@@ -57,8 +57,14 @@ public class ShapeLine extends GeoLine {
 //				+ thresholdDistance + "]";
 //	}
 	
+//	@Override
+//	public String toString() {
+//		return getListGeoPoints().toString();
+//	}
+	
+
 	@Override
 	public String toString() {
-		return getListGeoPoints().toString();
+		return "Shape Line - " + super.toString();
 	}
 }
