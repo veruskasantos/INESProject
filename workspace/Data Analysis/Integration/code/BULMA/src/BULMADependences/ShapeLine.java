@@ -1,5 +1,6 @@
 package BULMADependences;
 
+import java.util.LinkedList;
 import java.util.List;
 
 import com.vividsolutions.jts.geom.LineString;
@@ -25,6 +26,10 @@ public class ShapeLine extends GeoLine {
 		super(id, lineString, blockingKey, listGeoPoints, greaterDistancePoints);
 		this.distanceTraveled = distanceTraveled;
 		this.route = route;
+	}
+	
+	public ShapeLine(String shapeId, LinkedList<GeoPoint> listGeoPoint, String route) {
+		super(shapeId, listGeoPoint, route);
 	}
 	
 	public String getRoute() {

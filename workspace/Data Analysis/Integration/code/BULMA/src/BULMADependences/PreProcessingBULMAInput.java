@@ -104,7 +104,7 @@ public class PreProcessingBULMAInput {
 			String busCode = attributes[0]; //Unidad
 			String latitude = attributes[4];
 			String longitude = attributes[5];
-			String timestamp = attributes[2]; //Instante
+			String timestamp = attributes[1].split(" ")[1]; // to get just the time; //Instante
 			String route = attributes[6]; //Linea
 			int gpsID = ++gpsIDCount;
 			

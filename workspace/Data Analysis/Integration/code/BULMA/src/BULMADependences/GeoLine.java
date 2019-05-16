@@ -2,11 +2,11 @@ package BULMADependences;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import com.vividsolutions.jts.geom.LineString;
 import PointDependencies.GeoPoint;
-import com.vividsolutions.jts.geom.Geometry;
 
 public class GeoLine implements Serializable {
 	
@@ -29,6 +29,12 @@ public class GeoLine implements Serializable {
 		this(id, line, blockingKey);
 		this.listGeoPoints = listGeoPoints;
 		this.greaterDistancePoints = greaterDistancePoints;
+	}
+	
+	public GeoLine(String id, LinkedList<GeoPoint> listGeoPoint, String route) {
+		this.id = id;
+		this.listGeoPoints = listGeoPoint;
+		this.blockingKey = route;
 	}
 	
 	public String getId() {
