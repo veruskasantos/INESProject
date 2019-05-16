@@ -6,9 +6,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Filter GPS data to bus.code, latitude, longitude, timestamp, line.code, gps.id
@@ -44,98 +42,6 @@ public class PreProcessingBULMAInput {
 		String header = "bus_code,latitude,longitude,timestamp,line_code,gps_id";
 		
 		saveData2CSV(newFilePath, filteredGPSData, header);
-	}
-	
-	
-	/**
-	 * Add route id and frequency to shapes.txt file
-	 * TODO: write this code in jupyter notebook
-	 */
-	public static void updateShapeFile(String filePath, String city) {
-		String shapePath = filePath + "shapes.txt";
-		String tripsPath = filePath + "trips.txt";
-		String routesPath = filePath + "routes_label.txt";
-		
-		List<String> newShapeFile = new ArrayList<>();
-		
-		// Create a map {route: shapes} from trips.txt
-		Map<String, String> routeShapeMap = new HashMap<String, String>();
-		
-		List<String> tripsData = readDataFromCSV(tripsPath);
-		for (String trip : tripsData) {
-			String[] attributes = trip.split(DELIMITER);
-			String route = attributes[0];
-			String shapeID = attributes[7];
-			
-			if (city.equals("Recife")) {
-				shapeID = attributes[6];
-			}
-			
-			if (!routeShapeMap.containsKey(shapeID)) {
-				routeShapeMap.put(shapeID, route); // assuming one route to one shape
-			}
-		}
-	
-		// Create a map {route: frequency} from routes.txt
-		Map<String, String> routeFrequencyMap = new HashMap<String, String>();
-		
-		List<String> routesData = readDataFromCSV(routesPath);
-		for (String routes : routesData) {
-			String[] attributes = routes.split(DELIMITER);
-			String route = attributes[0];
-			String frequency = attributes[8];
-			
-			if (city.equals("CampinaGrande")) { //the gps data route is route_short_name
-				String route_gps = attributes[2]; //route_short_name
-				
-				if (!routeFrequencyMap.containsKey(route)) {
-					routeFrequencyMap.put(route, frequency + "-" + route_gps);
-				}
-				
-			} else {
-				if (!routeFrequencyMap.containsKey(route)) {
-					routeFrequencyMap.put(route, frequency);
-				}
-			}
-		}
-				
-		
-		List<String> shapesData = readDataFromCSV(shapePath);
-		for (String shape : shapesData) {
-			String[] attributes = shape.split(DELIMITER);
-			String shapeID = attributes[0];
-			
-			String route = "-";
-			String frequency = "-";
-			if (routeShapeMap.containsKey(shapeID)) {
-				route = routeShapeMap.get(shapeID);
-			}
-			
-			String newLine = route + DELIMITER + shape + DELIMITER + frequency;
-			
-			if (routeFrequencyMap.containsKey(route)) {
-				
-				if (city.equals("CampinaGrande")) {
-					String[] frequency_route = routeFrequencyMap.get(route).split("-");
-					frequency = frequency_route[0];
-					String route_id = frequency_route[1];
-					
-					newLine = route_id + DELIMITER + shape + DELIMITER + frequency;
-					
-				} else {
-					frequency = routeFrequencyMap.get(route);
-					
-					newLine = route + DELIMITER + shape + DELIMITER + frequency;
-				}
-			}
-			
-			newShapeFile.add(newLine);
-		}
-		
-		String header = "route,shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence,shape_dist_traveled,route_frequency";
-		
-		saveData2CSV(filePath + "shapes.csv", newShapeFile, header);
-		
 	}
 	
 	private static List<String> filterGPSDataCG(List<String> gpsData) {

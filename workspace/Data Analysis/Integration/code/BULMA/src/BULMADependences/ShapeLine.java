@@ -10,7 +10,7 @@ public class ShapeLine extends GeoLine {
 
 	private static final long serialVersionUID = 1L;
 	
-	private Float distanceTraveled;
+	private Float distanceTraveled; // in meters
 	private String route;
 	private int thresholdDistance;
 		

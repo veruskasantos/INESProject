@@ -63,11 +63,10 @@ public class MatchingRoutesShapeGPS {
 
 	// to separate trips, when no gps point was send
 	private static final double THRESHOLD_TIME = 600000; // 20 minutes
+	//TODO Some trips are no splitted (has code -3) because no gps was send (interval): 092 - 2042 - trip 7
 	
 	// threshold to identify outliers and to identify initial and final points based on greater distance and shape points 
-	private static final double PERCENTAGE_DISTANCE_CURITIBA = 0.09; 
-	private static final int PERCENTAGE_DISTANCE_CG = 100; // meters
-	
+	private static final double PERCENTAGE_DISTANCE = 0.09; 
 	private static final String FILE_SEPARATOR = ",";
 	private static final String SLASH = "/";
 
@@ -106,9 +105,6 @@ public class MatchingRoutesShapeGPS {
 		FileSystem fs = FileSystem.get(new URI(pathGPSFiles), conf);
 		FileStatus[] fileStatus = fs.listStatus(new Path(pathGPSFiles));
 
-		// Adding route id and route frequency to each shape
-		PreProcessingBULMAInput.updateShapeFile(pathFileShapes, city);
-		
 		for (FileStatus file : fileStatus) {
 			
 			if (!file.getPath().getName().contains("preprocessed_")) {
@@ -319,12 +315,7 @@ public class MatchingRoutesShapeGPS {
 							for (ShapeLine shapeLine : shapeLineList) {
 								
 								thresholdDistanceCurrentShape = (int) (shapeLine.getDistanceTraveled()
-										/ (shapeLine.getListGeoPoints().size() * PERCENTAGE_DISTANCE_CURITIBA));
-								
-								// greater distance between shapes points is less in campina grande, around 25
-								if (city.equals("CampinaGrande")) {
-									thresholdDistanceCurrentShape = (int) (shapeLine.getListGeoPoints().size() * PERCENTAGE_DISTANCE_CURITIBA);
-								}
+										/ (shapeLine.getListGeoPoints().size() * PERCENTAGE_DISTANCE));
 								
 								shapeLine.setThresholdDistance(thresholdDistanceCurrentShape);
 								
