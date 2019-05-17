@@ -147,10 +147,7 @@ public class BUSTEstimationV3Initial {
 			
 			String previousDate = subtractDay(stringDate);
 			
-			String ticketPathFile = busTicketPath + SLASH 			
-					+ previousDate.replace("_", "-") + "_indexed_ticketing.csv";			
-
-			JavaRDD<String> result = execute(context, bulmaOutputString, pathFileShapes, ticketPathFile, busStopsFile,
+			JavaRDD<String> result = execute(context, bulmaOutputString, pathFileShapes, busStopsFile,
 					minPartitions, previousDate.replace("_", "-"));
 
 			/**
@@ -180,7 +177,7 @@ public class BUSTEstimationV3Initial {
 
 	@SuppressWarnings("serial")
 	private static JavaRDD<String> execute(JavaSparkContext context, JavaRDD<String> bulmaOutputString,
-			String pathFileShapes, String busTicketFile, String busStopsFile, int minPartitions, final String previousDate) {
+			String pathFileShapes, String busStopsFile, int minPartitions, final String previousDate) {
 
 		/**
 		 * Removes header (first line) from file

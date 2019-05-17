@@ -29,16 +29,21 @@ public class PreProcessingBULMAInput {
 	public static void filterGPSData(String filePath, String city) {
 		List<String> gpsData = readDataFromCSV(filePath);
 		List<String> filteredGPSData;
+		String newFilePath; // the final gps name should be preprocessed_<date>.csv
 		
 		if (city.equals("Recife")) {
 			filteredGPSData = filterGPSDataRecife(gpsData);
+			newFilePath = filePath.substring(0, filePath.lastIndexOf("/")) + "/preprocessed" + filePath.substring(filePath.lastIndexOf("_"), filePath.length());
+			
 		} else if (city.equals("Curitiba")) {
 			filteredGPSData = filterGPSDataCuritiba(gpsData);
+			newFilePath = filePath.substring(0, filePath.lastIndexOf("/")) + "/preprocessed_" + filePath.substring(filePath.lastIndexOf("/")+1, filePath.lastIndexOf("_veiculos")).replace("_", "-") + ".csv";
+			
 		} else {
 			filteredGPSData = filterGPSDataCG(gpsData);
+			newFilePath = filePath.substring(0, filePath.lastIndexOf("/")) + "/preprocessed_" + filePath.substring(filePath.lastIndexOf("/")+19, filePath.length());
 		}
 		
-		String newFilePath = filePath.substring(0, filePath.lastIndexOf("/")) + "/preprocessed_" + filePath.substring(filePath.lastIndexOf("/")+1, filePath.length());
 		String header = "bus_code,latitude,longitude,timestamp,line_code,gps_id";
 		
 		saveData2CSV(newFilePath, filteredGPSData, header);
