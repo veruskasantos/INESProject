@@ -8,6 +8,7 @@ public class BulmaOutput implements Serializable, Comparable<BulmaOutput> {
 	private String tripNum;
 	private String route;
 	private String shapeId;
+	private String routeFrequency;
 	private String shapeSequence;
 	private String latShape;
 	private String lonShape;
@@ -24,14 +25,17 @@ public class BulmaOutput implements Serializable, Comparable<BulmaOutput> {
 	public BulmaOutput() {
 		super();
 	}
-		
-	public BulmaOutput(String tripNum, String route, String shapeId, String shapeSequence, String latShape,
+	
+//	trip_number,route,shape_id,route_frequency,shape_sequence,shape_lat,shape_lon,
+//	gps_id,bus_code,gps_timestamp,gps_lat,gps_lon,distance_to_shape_point,threshold_distance,trip_problem_code
+	public BulmaOutput(String tripNum, String route, String shapeId, String routeFrequency, String shapeSequence, String latShape,
 			String lonShape, String gpsPointId, String busCode, String timestamp, String latGPS, String lonGPS,
 			String dinstance, String thresholdProblem, String tripProblem, String gps_date) {
 		
 		this.tripNum = tripNum;
 		this.route = route;
 		this.shapeId = shapeId;
+		this.routeFrequency = routeFrequency;
 		this.shapeSequence = shapeSequence;
 		this.latShape = latShape;
 		this.lonShape = lonShape;
@@ -184,5 +188,12 @@ public class BulmaOutput implements Serializable, Comparable<BulmaOutput> {
         }
         return 0;
 	}
-	
+
+	public String getRouteFrequency() {
+		return routeFrequency;
+	}
+
+	public void setRouteFrequency(String routeFrequency) {
+		this.routeFrequency = routeFrequency;
+	}
 }

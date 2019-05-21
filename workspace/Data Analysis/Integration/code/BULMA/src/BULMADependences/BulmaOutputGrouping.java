@@ -28,4 +28,8 @@ public class BulmaOutputGrouping implements Serializable {
 		return mapOutputGrouping.containsKey(shapeSequence);
 	}
 	
+	@Override
+	public String toString() {
+		return "ShapeID elements grouped by Bulma output: " + this.mapOutputGrouping.size();
+	}
 }

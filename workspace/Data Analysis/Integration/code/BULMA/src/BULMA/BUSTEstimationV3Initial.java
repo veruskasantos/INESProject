@@ -204,7 +204,7 @@ public class BUSTEstimationV3Initial {
 
 					public Tuple2<String, BulmaOutput> call(String bulmaOutputString) throws Exception {
 						StringTokenizer st = new StringTokenizer(bulmaOutputString, SEPARATOR);
-						BulmaOutput bulmaOutput = new BulmaOutput(st.nextToken(), st.nextToken(), st.nextToken(),
+						BulmaOutput bulmaOutput = new BulmaOutput(st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(),
 								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(),
 								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(),
 								st.nextToken(), previousDate);

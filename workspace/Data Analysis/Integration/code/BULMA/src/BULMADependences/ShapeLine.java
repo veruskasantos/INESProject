@@ -30,6 +30,7 @@ public class ShapeLine extends GeoLine {
 	
 	public ShapeLine(String shapeId, LinkedList<GeoPoint> listGeoPoint, String route) {
 		super(shapeId, listGeoPoint, route);
+		this.route = route;
 	}
 	
 	public String getRoute() {

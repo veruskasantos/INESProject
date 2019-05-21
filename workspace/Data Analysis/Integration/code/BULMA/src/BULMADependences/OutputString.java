@@ -26,9 +26,8 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 	}
 
 	public String getTimestampField() {
-		String gps_date_time = this.outputString.split(",")[12];
+		String gps_date_time = this.outputString.split(",")[13];
 		String timestamp;
-//		System.out.println("Timestamp : " + timestamp);
 		if (gps_date_time.equals("-")) {
 			timestamp = "0";
 		} else {

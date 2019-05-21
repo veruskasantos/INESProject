@@ -33,32 +33,34 @@ public class MergeGTFSFiles {
 
 	public static void main(String[] args) {
 		
-		if (args.length != 6) {
-			System.err.println("Usage: <stopTimes file> <trips file> <stops file> <routes file> <shapes file> <output  path>");
+		if (args.length != 3) {
+			System.err.println("Usage: <city> <gtfs path>");
 			System.exit(1);
 		}
 		
-		String stopTimes = args[0]; // trip_id,arrival_time,departure_time,stop_id,stop_sequence
-		String trips = args[1]; // route_id
-		String stops = args[2]; // lat_stop, lng_stop
-		String routes = args[3];
-		String shapes = args[4];
-		String newFile = args[5];
+		String city = args[0];
+		String GTFSPath = args[1] + city + "/";
+		
+		String stopTimes = GTFSPath + "stop_times.txt"; // trip_id,arrival_time,departure_time,stop_id,stop_sequence
+		String trips = GTFSPath + "trips.txt"; // route_id
+		String stops = GTFSPath + "stops.txt"; // lat_stop, lng_stop
+		String routes = GTFSPath + "routes_label.txt";
+		String shapes = GTFSPath + "shapes.csv";
+		String outputPath = args[2]  + city + "/stop_times_shapes.txt";
 		
 //		Uncomment the lines below to generate Shape File
-		readRoutesFile(routes);
-		readTripFileGetRoute(trips);
-		updateShapeFile(shapes, newFile);
+//		readRoutesFile(routes);
+//		readTripFileGetRoute(trips);
+//		updateShapeFile(shapes, newFile);
 		
 //	    Uncomment the lines below to generate stops times file
-//		readRoutesFile(routes);
-//		readTripFile(trips);
-//		readStopsFile(stops);
-//		createShapePoints(shapes);
-//		createNewFile(newFile, stopTimes);
+		readRoutesFile(routes);
+		readTripFile(trips, city);
+		readStopsFile(stops);
+		createShapePoints(shapes);
+		createNewFile(outputPath, stopTimes);
 		
 		System.out.println("Done!");
-		
 	}
 	
 	private static void createShapePoints(String shapes) {
@@ -66,7 +68,6 @@ public class MergeGTFSFiles {
 		String lineShapes = "";
 		try {
 			brShapes = new BufferedReader(new FileReader(shapes));
-
 			
 			String previousId = null;
 			brShapes.readLine();	
@@ -74,14 +75,14 @@ public class MergeGTFSFiles {
 			while ((lineShapes = brShapes.readLine()) != null) {
 
 				String[] data = lineShapes.replace("\"", "").split(FILE_SEPARATOR);
-				String shapeId = data[0];
+				String shapeId = data[1];
 				String route = mapShapeRouteId.get(shapeId);
 				if (route == null) {
 					route = "-";
 				}
-				String lat = data[1];
-				String lng = data[2];
-				String pointSequence = data[3];
+				String lat = data[2];
+				String lng = data[3];
+				String pointSequence = data[4];
 				
 				ShapePoint currentShapePoint = new ShapePoint(shapeId, lat, lng, pointSequence, null);
 				
@@ -100,7 +101,6 @@ public class MergeGTFSFiles {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
 	}
 	
 	private static void createNewShapeLine(List<GeoPoint> listGeoPoint) {
@@ -116,7 +116,6 @@ public class MergeGTFSFiles {
 			Double latitude = Double.valueOf(currentGeoPoint.getLatitude());
 			Double longitude = Double.valueOf(currentGeoPoint.getLongitude());
 			coordinates.add(new Coordinate(latitude, longitude));
-
 		}
 
 		Coordinate[] array = new Coordinate[coordinates.size()];
@@ -240,7 +239,7 @@ public class MergeGTFSFiles {
 		}
 	}
 	
-	private static void readTripFile(String trips) {
+	private static void readTripFile(String trips, String city) {
 		BufferedReader brTrips = null;
 		String lineTrips = "";
 		
@@ -252,7 +251,18 @@ public class MergeGTFSFiles {
 				String[] data = lineTrips.replace("\"", "").split(FILE_SEPARATOR);
 				String route = data[0];
 				String tripId = data[2];
-				String shapeId = data[5];
+				String shapeId;
+				
+				if (city.equals("Recife")) {
+					shapeId = data[6];
+					
+					if (shapeId.equals("")) { // some lines have some wrong empty fields
+						shapeId = data[7];
+					}
+				} else {
+					shapeId = data[7];
+				}
+				
 
 				if (!mapTripRoute.containsKey(tripId)) {
 					mapTripRoute.put(tripId, route + FILE_SEPARATOR + shapeId);
@@ -275,18 +285,20 @@ public class MergeGTFSFiles {
 
 				String[] data = lineStops.replace("\"", "").split(FILE_SEPARATOR);
 				String stopId = data[0];
-				String lat = data[3];
-				String lng = data[4];
+				String lat = data[4];
+				String lng = data[5];
 				
+				// when the separator is comma and some address has comma
 				if (!lat.startsWith("-")) {
-					lat = data[4];
-					lng = data[5];
+					lat = data[5];
+					lng = data[6];
+					
 					if (!lat.startsWith("-")) {
-						lat = data[5];
-						lng = data[6];
+						lat = data[6];
+						lng = data[7];
 					}
 				}
-
+				
 				if (!mapStopLatLng.containsKey(stopId)) {
 					mapStopLatLng.put(stopId, lat + FILE_SEPARATOR + lng);
 				}
@@ -332,7 +344,6 @@ public class MergeGTFSFiles {
 				if (routeCode == null) {
 					routeCode = "-";
 				} 
-				
 				
 				ShapePoint closestPoint = getClosestShapePoint(new ShapePoint(null, lat, lng , null, null), mapShapeLines.get(shapeId));
 				
