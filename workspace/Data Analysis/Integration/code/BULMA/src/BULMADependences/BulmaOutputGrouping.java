@@ -6,21 +6,21 @@ import java.util.Map;
 public class BulmaOutputGrouping implements Serializable {
 	
 	private static final long serialVersionUID = -7855076809125995429L;
-	private Map<String, BulmaOutput> mapOutputGrouping;
+	private Map<String, BulmaBusteOutput> mapOutputGrouping;
 
 	public BulmaOutputGrouping() {
 		super();
 	}
 	
-	public BulmaOutputGrouping(Map<String, BulmaOutput> mapOutputGrouping) {
+	public BulmaOutputGrouping(Map<String, BulmaBusteOutput> mapOutputGrouping) {
 		this.mapOutputGrouping = mapOutputGrouping;
 	}
 
-	public Map<String, BulmaOutput> getMapOutputGrouping() {
+	public Map<String, BulmaBusteOutput> getMapOutputGrouping() {
 		return mapOutputGrouping;
 	}
 
-	public void setMapOutputGrouping(Map<String, BulmaOutput> mapOutputGrouping) {
+	public void setMapOutputGrouping(Map<String, BulmaBusteOutput> mapOutputGrouping) {
 		this.mapOutputGrouping = mapOutputGrouping;
 	}
 

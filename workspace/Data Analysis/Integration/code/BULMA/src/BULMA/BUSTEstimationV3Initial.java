@@ -33,7 +33,7 @@ import org.apache.spark.api.java.function.PairFunction;
 
 import com.clearspring.analytics.util.Lists;
 
-import BULMADependences.BulmaOutput;
+import BULMADependences.BulmaBusteOutput;
 import BULMADependences.BulmaOutputGrouping;
 import BULMADependences.OutputString;
 import BULMADependences.Problem;
@@ -199,12 +199,12 @@ public class BUSTEstimationV3Initial {
 		JavaRDD<String> busStopsString = context.textFile(busStopsFile, minPartitions)
 				.mapPartitionsWithIndex(removeHeader, false);
 
-		JavaPairRDD<String, Iterable<BulmaOutput>> rddBulmaOutputGrouped = bulmaOutputString
-				.mapToPair(new PairFunction<String, String, BulmaOutput>() {
+		JavaPairRDD<String, Iterable<BulmaBusteOutput>> rddBulmaOutputGrouped = bulmaOutputString
+				.mapToPair(new PairFunction<String, String, BulmaBusteOutput>() {
 
-					public Tuple2<String, BulmaOutput> call(String bulmaOutputString) throws Exception {
+					public Tuple2<String, BulmaBusteOutput> call(String bulmaOutputString) throws Exception {
 						StringTokenizer st = new StringTokenizer(bulmaOutputString, SEPARATOR);
-						BulmaOutput bulmaOutput = new BulmaOutput(st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(),
+						BulmaBusteOutput bulmaOutput = new BulmaBusteOutput(st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(),
 								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(),
 								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(),
 								st.nextToken(), previousDate);
@@ -212,24 +212,25 @@ public class BUSTEstimationV3Initial {
 						String codeTripShapeKey = bulmaOutput.getBusCode() + ":" + bulmaOutput.getTripNum() + ":"
 								+ bulmaOutput.getShapeId();
 
-						return new Tuple2<String, BulmaOutput>(codeTripShapeKey, bulmaOutput);
+						return new Tuple2<String, BulmaBusteOutput>(codeTripShapeKey, bulmaOutput);
 					}
 				}).groupByKey(minPartitions);
 		
 		JavaPairRDD<String, Object> rddBulmaOutputGrouping = rddBulmaOutputGrouped
-				.mapToPair(new PairFunction<Tuple2<String, Iterable<BulmaOutput>>, String, Object>() {
+				.mapToPair(new PairFunction<Tuple2<String, Iterable<BulmaBusteOutput>>, String, Object>() {
 
-					public Tuple2<String, Object> call(Tuple2<String, Iterable<BulmaOutput>> codeTripShape_BulmaOutput) throws Exception {
-						Map<String, BulmaOutput> mapOutputGrouping = new HashMap<String, BulmaOutput>();
+					public Tuple2<String, Object> call(Tuple2<String, Iterable<BulmaBusteOutput>> codeTripShape_BulmaOutput) throws Exception {
+						Map<String, BulmaBusteOutput> mapOutputGrouping = new HashMap<String, BulmaBusteOutput>();
 						String codeTripShapeKey = codeTripShape_BulmaOutput._1.split("\\:")[2]; // [2] = shapeId
 									
-						List<BulmaOutput> listBulmaOutput = Lists.newArrayList(codeTripShape_BulmaOutput._2);
+						List<BulmaBusteOutput> listBulmaOutput = Lists.newArrayList(codeTripShape_BulmaOutput._2);
 						Collections.sort(listBulmaOutput);
 						
-						for (BulmaOutput bulmaOutput : listBulmaOutput) {
+						for (BulmaBusteOutput bulmaOutput : listBulmaOutput) {
 							mapOutputGrouping.put(bulmaOutput.getShapeSequence(), bulmaOutput);
 						}
 
+						//use map if you want to change the key
 						return new Tuple2<String, Object>(codeTripShapeKey, new BulmaOutputGrouping(mapOutputGrouping));
 					}
 				});		
@@ -339,7 +340,7 @@ public class BUSTEstimationV3Initial {
 								if (previousPoint == null) {
 									if (bulmaOutputGrouping.containsShapeSequence(currentShapeSequence)) {
 
-										BulmaOutput currentOutput = bulmaOutputGrouping.getMapOutputGrouping()
+										BulmaBusteOutput currentOutput = bulmaOutputGrouping.getMapOutputGrouping()
 												.get(currentShapeSequence);
 
 										currentTimestamp = currentOutput.getTimestamp();
@@ -354,7 +355,7 @@ public class BUSTEstimationV3Initial {
 										tripNum = currentOutput.getTripNum();
 										String latGPS = currentOutput.getLatGPS();
 										String lonGPS = currentOutput.getLonGPS();
-										String distanceToShape = currentOutput.getDinstance();
+										String distanceToShape = currentOutput.getDistance();
 
 										addOutput(currentRoute, tripNum, currentShapeId, currentShapeSequence,
 												currentLatShape, currentLonShape, currentDistanceTraveled, busCode,
@@ -369,7 +370,7 @@ public class BUSTEstimationV3Initial {
 								} else {
 
 									if (bulmaOutputGrouping.containsShapeSequence(currentShapeSequence)) {
-										BulmaOutput currentOutput = bulmaOutputGrouping.getMapOutputGrouping()
+										BulmaBusteOutput currentOutput = bulmaOutputGrouping.getMapOutputGrouping()
 												.get(currentShapeSequence);
 
 										String busCode = currentOutput.getBusCode();
@@ -378,7 +379,7 @@ public class BUSTEstimationV3Initial {
 										tripNum = currentOutput.getTripNum();
 										String latGPS = currentOutput.getLatGPS();
 										String lonGPS = currentOutput.getLonGPS();
-										String distanceToShape = currentOutput.getDinstance();
+										String distanceToShape = currentOutput.getDistance();
 										currentTimestamp = currentOutput.getTimestamp();
 										currentGPSDateTime = currentOutput.getGps_datetime();
 
