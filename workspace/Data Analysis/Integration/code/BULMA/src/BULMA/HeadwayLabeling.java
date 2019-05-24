@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
 
@@ -41,7 +42,7 @@ public class HeadwayLabeling {
 	private static final String OUTPUT_HEADER = "route,tripNum,shapeId,routeFrequency,shapeSequence,shapeLat,shapeLon,distanceTraveledShape,"
 			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,problem,headway,busBunching,nextBusCode";
 
-	private static Map<String, ArrayList<BulmaBusteOutput>> stopsBusteMap = new HashMap<String, ArrayList<BulmaBusteOutput>>();
+	private static HashMap<String, HashMap<String, Long>> scheduledHeadwaysMap = new HashMap<String, HashMap<String, Long>>();
 
 	public static void main(String[] args) throws IOException, URISyntaxException, ParseException {
 
@@ -221,6 +222,8 @@ public class HeadwayLabeling {
 			}
 		}).groupByKey(minPartitions);
 		
+		
+		//TODO há alguns repetidos, checar esses casos/headways
 		/**
 		 * Calculate headway of bus stops and grouped by route
 		 * 
@@ -233,17 +236,14 @@ public class HeadwayLabeling {
 			@Override
 			public Tuple2<String, Tuple2<String, List<Tuple2<String, Long>>>> call(Tuple2<String, Iterable<String>> routeStopID_arrivalTimes) 
 					throws Exception {
-				//TODO há alguns repetidos, checar esses casos/headways
-				String[] routeStopID = routeStopID_arrivalTimes._1.split("\\.");
-				String route = routeStopID[0];
-				String stopID = routeStopID[1];
-				System.out.println("route: " + route + " stopID: " + stopID);
+				String routeStopIDKey = routeStopID_arrivalTimes._1; // route.stopId
+				
+				System.out.println("route: " + routeStopIDKey.split("\\.")[0] + " stopID: " + routeStopIDKey.split("\\.")[1]);
 				
 				//stop,arrival-headway
 				List<Tuple2<String, Long>> arrivalTimesHeadwayMap = new ArrayList<>();
 				
 				List<String> arrivalTimesList =  Lists.newArrayList(routeStopID_arrivalTimes._2);
-				System.out.println("Before sort: " + arrivalTimesList.toString());
 				Collections.sort(arrivalTimesList);
 				System.out.println("After sort: " + arrivalTimesList.toString());
 				
@@ -254,10 +254,16 @@ public class HeadwayLabeling {
 					String firstArrivalSecondArrivalKey = firstArrival.replaceAll(":", "") + "_" + secondArrival.replaceAll(":", "");
 					
 					arrivalTimesHeadwayMap.add(new Tuple2<String, Long>(firstArrivalSecondArrivalKey, headway));
+					
+					if (!scheduledHeadwaysMap.containsKey(routeStopIDKey)) {
+						scheduledHeadwaysMap.put(routeStopIDKey, new HashMap<String,Long>());
+					}
+					
+					scheduledHeadwaysMap.get(routeStopIDKey).put(firstArrivalSecondArrivalKey, headway); //firstArrivalTime_secondArrivalTime
 				}
 				
-				return new Tuple2<String, Tuple2<String,List<Tuple2<String, Long>>>>(route, new Tuple2<String,List<Tuple2<String, Long>>>(stopID, 
-						arrivalTimesHeadwayMap));
+				return new Tuple2<String, Tuple2<String,List<Tuple2<String, Long>>>>(routeStopIDKey.split("\\.")[0], 
+						new Tuple2<String,List<Tuple2<String, Long>>>(routeStopIDKey.split("\\.")[1],  arrivalTimesHeadwayMap));
 			}
 		}).groupByKey(minPartitions);
 		
@@ -303,13 +309,8 @@ public class HeadwayLabeling {
 								closestHeadway = getHeadway(currentBusteOutput.getTimestamp(), closestNextBus.getTimestamp());
 							}
 
-							currentBusteOutput.setHeadway(closestHeadway);
-							currentBusteOutput.setNextBusCode(closestNextBus.getBusCode());
-							listBusteOutputHeadway.add(currentBusteOutput);
-							
-							// TODO 
-							// if headway scheduled is a map pre processed, calculate here
-							
+							//checking bus bunching with scheduled headway
+							Long scheduledHeadway = null;
 							String[] firstBusTimeSplit = currentBusteOutput.getTimestamp().split(":");
 							int firstBusTime =  Integer.getInteger(firstBusTimeSplit[0]) + Integer.getInteger(firstBusTimeSplit[1]) + Integer.getInteger(firstBusTimeSplit[2]);
 							
@@ -319,7 +320,33 @@ public class HeadwayLabeling {
 							String route = routeStopID.split(":")[0];
 							String stopID = routeStopID.split(":")[1];
 							
+							HashMap<String, Long> arrivalTimesHeadwayMap = scheduledHeadwaysMap.get(routeStopID);
+							for (Entry<String, Long> arrivalTimesHeadway : arrivalTimesHeadwayMap.entrySet()) {
+								String[] arrivalTimes = arrivalTimesHeadway.getKey().split("_");
+								Long headway = arrivalTimesHeadway.getValue();
+								
+								Long firstArrivalTime = Long.getLong(arrivalTimes[0]);
+								Long secondArrivalTime = Long.getLong(arrivalTimes[1]);
+								
+								//TODO se esse mapa tiver ordenado, flexibilizar os ifs pq pega o primeiro
+								if (firstBusTime >= firstArrivalTime && firstBusTime <= secondArrivalTime
+										&& secondArrivalTime >= firstArrivalTime && secondArrivalTime <= secondArrivalTime) {
+									scheduledHeadway = headway;
+									break;
+								}
+							}
 							
+							boolean busBunching = true;
+							if (closestHeadway < (scheduledHeadway/4)) {
+								busBunching = false;
+							}
+							
+							//saving
+							currentBusteOutput.setHeadway(closestHeadway);
+							currentBusteOutput.setNextBusCode(closestNextBus.getBusCode());
+							currentBusteOutput.setBusBunching(busBunching);
+							
+							listBusteOutputHeadway.add(currentBusteOutput);
 						}
 
 						return new Tuple2<String, List<BulmaBusteOutput>>(routeStopID, listBusteOutputHeadway);
