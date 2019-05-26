@@ -34,7 +34,7 @@ public class MergeGTFSFiles {
 	public static void main(String[] args) {
 		
 		if (args.length != 3) {
-			System.err.println("Usage: <city> <gtfs path>");
+			System.err.println("Usage: <city> <gtfs path> <output path>");
 			System.exit(1);
 		}
 		
@@ -46,7 +46,7 @@ public class MergeGTFSFiles {
 		String stops = GTFSPath + "stops.txt"; // lat_stop, lng_stop
 		String routes = GTFSPath + "routes_label.txt";
 		String shapes = GTFSPath + "shapes.csv";
-		String outputPath = args[2]  + city + "/stop_times_shapes.txt";
+		String outputPath = args[2]  + city + "/stop_times_shapes1.txt";
 		
 //		Uncomment the lines below to generate Shape File
 //		readRoutesFile(routes);
@@ -58,7 +58,7 @@ public class MergeGTFSFiles {
 		readTripFile(trips, city);
 		readStopsFile(stops);
 		createShapePoints(shapes);
-		createNewFile(outputPath, stopTimes);
+		createNewFile(outputPath, stopTimes, city);
 		
 		System.out.println("Done!");
 	}
@@ -310,7 +310,7 @@ public class MergeGTFSFiles {
 		}
 	}
 	
-	private static void createNewFile(String newFilePath, String stopTimes) {
+	private static void createNewFile(String newFilePath, String stopTimes, String city) {
 		BufferedReader brStopTimes = null;
 		
 		String lineStopTime = "";
@@ -352,7 +352,12 @@ public class MergeGTFSFiles {
 				printWriter.print(stopId + FILE_SEPARATOR);
 				printWriter.print(stopSequence + FILE_SEPARATOR);
 				printWriter.print(latlng + FILE_SEPARATOR);
-				printWriter.print(routeCode + FILE_SEPARATOR);
+				
+				if (city.equals("Recife")) { //GPS has route id, not route code
+					printWriter.print(routeId + FILE_SEPARATOR);
+				} else {
+					printWriter.print(routeCode + FILE_SEPARATOR);
+				}
 				printWriter.print(shapeId + FILE_SEPARATOR);
 				printWriter.println(closestPoint.getPointSequence());
 			}

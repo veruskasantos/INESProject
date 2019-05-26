@@ -6,14 +6,17 @@ import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
 
@@ -29,6 +32,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
+import org.spark_project.guava.collect.Iterators;
 
 import com.clearspring.analytics.util.Lists;
 
@@ -37,8 +41,10 @@ import scala.Tuple2;
 
 public class HeadwayLabeling {
 
+	//TODO change the indix to variable names
 	private static final String SEPARATOR = ",";
 	private static final String SLASH = "/";
+	private static final int BB_THRESHOLD = 5; // headway = 5 is considered bb
 	private static final String OUTPUT_HEADER = "route,tripNum,shapeId,routeFrequency,shapeSequence,shapeLat,shapeLon,distanceTraveledShape,"
 			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,problem,headway,busBunching,nextBusCode";
 
@@ -47,7 +53,7 @@ public class HeadwayLabeling {
 	public static void main(String[] args) throws IOException, URISyntaxException, ParseException {
 
 		if (args.length < 4) {
-			System.err.println("Usage: <Output Buste directory> <outputPath> <number of partitions>");
+			System.err.println("Usage: <city> <output Buste directory> <GTFS path> <output path> <number of partitions>");
 			System.exit(1);
 		}
 
@@ -64,7 +70,7 @@ public class HeadwayLabeling {
 		// SparkConf sparkConf = new SparkConf().setAppName("HeadwayLabeling"); // to run on cluster
 		JavaSparkContext context = new JavaSparkContext(sparkConf);
 
-		generateOutputFilesHDFS(context, busteOutputPath, stopTimesShapesPath, outputPath, minPartitions);
+		generateOutputFilesHDFS(context, busteOutputPath, stopTimesShapesPath, outputPath, city, minPartitions);
 
 		context.stop();
 		context.close();
@@ -72,7 +78,7 @@ public class HeadwayLabeling {
 	}
 
 	private static void generateOutputFilesHDFS(JavaSparkContext context, String pathBusteOutput, String stopTimesShapesPath,
-			String output, int minPartitions) throws IOException, URISyntaxException, ParseException {
+			String output, String city, int minPartitions) throws IOException, URISyntaxException, ParseException {
 
 		/**
 		 * Removes empty lines and header from file
@@ -133,7 +139,7 @@ public class HeadwayLabeling {
 
 				String stringDate = dirName.substring(dirName.lastIndexOf("_") + 1, dirName.length());
 
-				JavaRDD<String> result = execute(context, busteOutputString, stopTimesShapesPath, minPartitions);
+				JavaRDD<String> result = execute(context, busteOutputString, stopTimesShapesPath, city, minPartitions);
 
 				/**
 				 * Inserts a header into each output file
@@ -161,7 +167,7 @@ public class HeadwayLabeling {
 
 	@SuppressWarnings("serial")
 	private static JavaRDD<String> execute(JavaSparkContext context, JavaRDD<String> busteOutputString,
-			String stopTimesShapesPath, int minPartitions) {
+			String stopTimesShapesPath, final String city, int minPartitions) {
 		
 		Function2<Integer, Iterator<String>, Iterator<String>> removeHeader = new Function2<Integer, Iterator<String>, Iterator<String>>() {
 
@@ -214,16 +220,16 @@ public class HeadwayLabeling {
 
 			public Tuple2<String, String> call(String busStopsString) throws Exception {
 				String[] splittedEntry = busStopsString.split(SEPARATOR);
-				String route = splittedEntry[6];
-				String stopID = splittedEntry[2];
-				String arrivalTime = splittedEntry[0];
-				// route.stopId
-				return new Tuple2<String, String>(route + "." + stopID, arrivalTime);
+				String route = splittedEntry[6].replace(" ", "");
+				String stopID = splittedEntry[2].replace(" ", "");
+				String arrivalTime = splittedEntry[0].replace(" ", "");
+				
+				// route:stopId
+				return new Tuple2<String, String>(route + ":" + stopID, arrivalTime);
 			}
 		}).groupByKey(minPartitions);
 		
 		
-		//TODO há alguns repetidos, checar esses casos/headways
 		/**
 		 * Calculate headway of bus stops and grouped by route
 		 * 
@@ -236,40 +242,76 @@ public class HeadwayLabeling {
 			@Override
 			public Tuple2<String, Tuple2<String, List<Tuple2<String, Long>>>> call(Tuple2<String, Iterable<String>> routeStopID_arrivalTimes) 
 					throws Exception {
-				String routeStopIDKey = routeStopID_arrivalTimes._1; // route.stopId
+				String routeStopIDKey = routeStopID_arrivalTimes._1; // route:stopId
 				
-				System.out.println("route: " + routeStopIDKey.split("\\.")[0] + " stopID: " + routeStopIDKey.split("\\.")[1]);
-				
-				//stop,arrival-headway
+				//arrivalTimes-headway
 				List<Tuple2<String, Long>> arrivalTimesHeadwayMap = new ArrayList<>();
 				
-				List<String> arrivalTimesList =  Lists.newArrayList(routeStopID_arrivalTimes._2);
-				Collections.sort(arrivalTimesList);
-				System.out.println("After sort: " + arrivalTimesList.toString());
-				
-				for (int i = 0; i < arrivalTimesList.size()-2; i++) {
-					String firstArrival = arrivalTimesList.get(i);
-					String secondArrival = arrivalTimesList.get(i+1);
-					long headway = getHeadway(firstArrival, secondArrival);
-					String firstArrivalSecondArrivalKey = firstArrival.replaceAll(":", "") + "_" + secondArrival.replaceAll(":", "");
+				// GTFS of Recife is out of date, there is not 2018 date in calendar file
+				// So we will remove duplicate times
+				// if some scheduled headway is too small, it is because probably they belongs to different days
+				if (city.equals("Recife")) {
+					Set<String> arrivalTimesSet = new HashSet<String>();
+					for (String arrivalTime : routeStopID_arrivalTimes._2) {
+						arrivalTimesSet.add(arrivalTime);
+					}
+					//System.out.println("before: " +  ((Collection<?>)routeStopID_arrivalTimes._2).size()
+					//		+ " after: " + arrivalTimesSet.size());
+					List<String> arrivalTimesList =  new ArrayList<String>(arrivalTimesSet);
+					Collections.sort(arrivalTimesList);
 					
-					arrivalTimesHeadwayMap.add(new Tuple2<String, Long>(firstArrivalSecondArrivalKey, headway));
-					
-					if (!scheduledHeadwaysMap.containsKey(routeStopIDKey)) {
-						scheduledHeadwaysMap.put(routeStopIDKey, new HashMap<String,Long>());
+					for (int i = 0; i < arrivalTimesList.size()-2; i++) {
+						String firstArrival = arrivalTimesList.get(i);
+						String secondArrival = arrivalTimesList.get(i+1);
+						long headway = getHeadway(firstArrival, secondArrival);
+						String firstArrivalSecondArrivalKey = firstArrival.replaceAll(":", "") + "_" + secondArrival.replaceAll(":", "");
+						
+						arrivalTimesHeadwayMap.add(new Tuple2<String, Long>(firstArrivalSecondArrivalKey, headway));
+						
+						if (!scheduledHeadwaysMap.containsKey(routeStopIDKey)) {
+							scheduledHeadwaysMap.put(routeStopIDKey, new HashMap<String,Long>());
+						}
+						scheduledHeadwaysMap.get(routeStopIDKey).put(firstArrivalSecondArrivalKey, headway); //firstArrivalTime_secondArrivalTime
 					}
 					
-					scheduledHeadwaysMap.get(routeStopIDKey).put(firstArrivalSecondArrivalKey, headway); //firstArrivalTime_secondArrivalTime
+					if (arrivalTimesList.size() == 2) {
+						String firstArrival = arrivalTimesList.get(0);
+						String secondArrival = arrivalTimesList.get(1);
+						long headway = getHeadway(firstArrival, secondArrival);
+						String firstArrivalSecondArrivalKey = firstArrival.replaceAll(":", "") + "_" + secondArrival.replaceAll(":", "");
+						
+						arrivalTimesHeadwayMap.add(new Tuple2<String, Long>(firstArrivalSecondArrivalKey, headway));
+						
+						if (!scheduledHeadwaysMap.containsKey(routeStopIDKey)) {
+							scheduledHeadwaysMap.put(routeStopIDKey, new HashMap<String,Long>());
+						}
+						scheduledHeadwaysMap.get(routeStopIDKey).put(firstArrivalSecondArrivalKey, headway); //firstArrivalTime_secondArrivalTime
+					}
+					
+					return new Tuple2<String, Tuple2<String,List<Tuple2<String, Long>>>>(routeStopIDKey.split(":")[0], 
+							new Tuple2<String,List<Tuple2<String, Long>>>(routeStopIDKey.split(":")[1],  arrivalTimesHeadwayMap));
+					
+				} else {
+					//TODO update code to deal with service (same arrival times for different days)
+					//manter o trip_id e service em stop_t_s (merge file)
+					//pegar o service and trip, olhar em calendar e add a data em stop_t_s (merge file)
+					//adicionar a data na chave (aqui)
+					//calcular o headway com mesma data
+					//ao comparar, ver se está na data
+					
+					//List<String> arrivalTimesList =  Lists.newArrayList(routeStopID_arrivalTimes._2);
+					
+					return null;
 				}
-				
-				return new Tuple2<String, Tuple2<String,List<Tuple2<String, Long>>>>(routeStopIDKey.split("\\.")[0], 
-						new Tuple2<String,List<Tuple2<String, Long>>>(routeStopIDKey.split("\\.")[1],  arrivalTimesHeadwayMap));
 			}
 		}).groupByKey(minPartitions);
 		
-		rddBusStopsGrouped.saveAsTextFile("/home/veruska/Documentos/Projeto_INES/INESProject/workspace/Data Analysis/Integration/code/BULMA/data/output/Recife/scheduled_hd");
+		//TODO update this name, and test with qgis
+		rddBusStopsGrouped.saveAsTextFile("D:/Desktop/UFCG/Projeto INES/INESProject/workspace/Data Analysis/Integration/code/BULMA/data/output/Recife/scheduled_hd");
 		
-		// Calculate the headway between the buses of the same route in the same stop
+		// rddBusStopsGrouped.saveAsTextFile("/home/veruska/Documentos/Projeto_INES/INESProject/workspace/Data Analysis/Integration/code/BULMA/data/output/Recife/scheduled_hd");
+		
+		// Calculate the headway between the buses, considering same route, same stop and same day
 		// Headway: time difference for the bus that is in front
 		JavaPairRDD<String, List<BulmaBusteOutput>> rddHeadwayLabeling = rddBusteOutputGrouped.mapToPair(
 				new PairFunction<Tuple2<String, Iterable<BulmaBusteOutput>>, String, List<BulmaBusteOutput>>() {
@@ -312,32 +354,35 @@ public class HeadwayLabeling {
 							//checking bus bunching with scheduled headway
 							Long scheduledHeadway = null;
 							String[] firstBusTimeSplit = currentBusteOutput.getTimestamp().split(":");
-							int firstBusTime =  Integer.getInteger(firstBusTimeSplit[0]) + Integer.getInteger(firstBusTimeSplit[1]) + Integer.getInteger(firstBusTimeSplit[2]);
+							int firstBusTime =  Integer.valueOf(firstBusTimeSplit[0] + firstBusTimeSplit[1] 
+									+ firstBusTimeSplit[2]);
 							
 							String[] secondBusTimeSplit = closestNextBus.getTimestamp().split(":");
-							int secondBusTime =  Integer.getInteger(secondBusTimeSplit[0]) + Integer.getInteger(secondBusTimeSplit[1]) + Integer.getInteger(secondBusTimeSplit[2]);
-							
-							String route = routeStopID.split(":")[0];
-							String stopID = routeStopID.split(":")[1];
-							
+							int secondBusTime =  Integer.valueOf(secondBusTimeSplit[0] + secondBusTimeSplit[1] 
+									+ secondBusTimeSplit[2]);
+
 							HashMap<String, Long> arrivalTimesHeadwayMap = scheduledHeadwaysMap.get(routeStopID);
 							for (Entry<String, Long> arrivalTimesHeadway : arrivalTimesHeadwayMap.entrySet()) {
 								String[] arrivalTimes = arrivalTimesHeadway.getKey().split("_");
 								Long headway = arrivalTimesHeadway.getValue();
 								
-								Long firstArrivalTime = Long.getLong(arrivalTimes[0]);
-								Long secondArrivalTime = Long.getLong(arrivalTimes[1]);
+								int firstArrivalTime = Integer.valueOf(arrivalTimes[0]);
+								int secondArrivalTime = Integer.valueOf(arrivalTimes[1]);
 								
 								//TODO se esse mapa tiver ordenado, flexibilizar os ifs pq pega o primeiro
 								if (firstBusTime >= firstArrivalTime && firstBusTime <= secondArrivalTime
-										&& secondArrivalTime >= firstArrivalTime && secondArrivalTime <= secondArrivalTime) {
+										&& secondBusTime >= firstArrivalTime && secondBusTime <= secondArrivalTime) {
 									scheduledHeadway = headway;
 									break;
 								}
 							}
 							
 							boolean busBunching = true;
-							if (closestHeadway < (scheduledHeadway/4)) {
+							if (scheduledHeadway == null) {// if there is no data, consider a threshold
+								if (closestHeadway > BB_THRESHOLD) {
+									busBunching = false;
+								}
+							} else if (closestHeadway > (scheduledHeadway/4)) {
 								busBunching = false;
 							}
 							
