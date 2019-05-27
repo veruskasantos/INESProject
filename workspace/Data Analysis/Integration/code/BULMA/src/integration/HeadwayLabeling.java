@@ -1,4 +1,4 @@
-package BULMA;
+package integration;
 
 import java.io.IOException;
 import java.net.URI;
@@ -6,7 +6,6 @@ import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -14,7 +13,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -32,7 +30,6 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
-import org.spark_project.guava.collect.Iterators;
 
 import com.clearspring.analytics.util.Lists;
 
@@ -41,7 +38,7 @@ import scala.Tuple2;
 
 public class HeadwayLabeling {
 
-	//TODO change the indix to variable names
+	//TODO change the index to variable names
 	private static final String SEPARATOR = ",";
 	private static final String SLASH = "/";
 	private static final int BB_THRESHOLD = 5; // headway = 5 is considered bb
@@ -52,7 +49,7 @@ public class HeadwayLabeling {
 
 	public static void main(String[] args) throws IOException, URISyntaxException, ParseException {
 
-		if (args.length < 4) {
+		if (args.length < 5) {
 			System.err.println("Usage: <city> <output Buste directory> <GTFS path> <output path> <number of partitions>");
 			System.exit(1);
 		}
@@ -101,7 +98,7 @@ public class HeadwayLabeling {
 					line = iterator.next();
 					String timestamp = line.split(SEPARATOR)[13];
 					
-					if (!line.isEmpty() && !timestamp.equals("-")) { //skip empty line and line/shape without gps
+					if (!line.isEmpty() && !timestamp.equals("-")) { //skip empty line and line/shape without gps (the bus did not go to that stop)
 						output.add(line);
 					}
 				}
