@@ -1,18 +1,22 @@
 package BULMADependences;
 
-public class WeatherData {
+import java.io.Serializable;
+
+public class WeatherData implements Serializable{
 	
+	private static final long serialVersionUID = 1L;
 	private String latitude;
 	private String longitude;
 	private String time;
-	private String precipitation;
+	private Double precipitation;
 	private String stationCode;
 	
-	public WeatherData(String latitude, String longitude, String dateTime, String precipitation, String stationCode) {
-		this.latitude = latitude;
-		this.longitude = longitude;
-		this.time = dateTime;
-		this.precipitation = precipitation;
+	// It seems to be on right time
+	public WeatherData(String stationCode, String latitude, String longitude, String dateTime, String precipitation) {
+		this.latitude = latitude.replace(",", ".");
+		this.longitude = longitude.replace(",", ".");
+		this.time = dateTime.split(" ")[1];
+		this.precipitation = Double.valueOf(precipitation.replace(",", "."));
 		this.stationCode = stationCode;
 	}
 
@@ -40,11 +44,11 @@ public class WeatherData {
 		this.time = time;
 	}
 
-	public String getPrecipitation() {
+	public Double getPrecipitation() {
 		return precipitation;
 	}
 
-	public void setPrecipitation(String precipitation) {
+	public void setPrecipitation(Double precipitation) {
 		this.precipitation = precipitation;
 	}
 

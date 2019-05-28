@@ -1,7 +1,9 @@
 package PointDependencies;
 
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import com.vividsolutions.jts.geom.Point;
@@ -97,6 +99,26 @@ public abstract class GeoPoint implements Serializable, Comparable<GeoPoint>{
 		float dist = (float) (earthRadius * c);
 
 		return dist;
+	}
+	
+	// in minutes
+	public static long getTimeDifference(String time1, String time2) {
+		// HH converts hour in 24 hours format (0-23), day calculation
+		SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
+		long diffMinutes = 0;
+
+		try {
+			Date t1 = format.parse(time1);
+			Date t2 = format.parse(time2);
+
+			// in milliseconds
+			long diff = t2.getTime() - t1.getTime();
+			diffMinutes = diff / (60 * 1000);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return diffMinutes;
 	}
 	
 	public static float getDistanceInMeters(Point point1, Point point2) {

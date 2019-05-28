@@ -34,6 +34,7 @@ import org.apache.spark.api.java.function.PairFunction;
 import com.clearspring.analytics.util.Lists;
 
 import BULMADependences.BulmaBusteOutput;
+import PointDependencies.GeoPoint;
 import scala.Tuple2;
 
 public class HeadwayLabeling {
@@ -260,7 +261,7 @@ public class HeadwayLabeling {
 					for (int i = 0; i < arrivalTimesList.size()-2; i++) {
 						String firstArrival = arrivalTimesList.get(i);
 						String secondArrival = arrivalTimesList.get(i+1);
-						long headway = getHeadway(firstArrival, secondArrival);
+						long headway = GeoPoint.getTimeDifference(firstArrival, secondArrival);
 						String firstArrivalSecondArrivalKey = firstArrival.replaceAll(":", "") + "_" + secondArrival.replaceAll(":", "");
 						
 						arrivalTimesHeadwayMap.add(new Tuple2<String, Long>(firstArrivalSecondArrivalKey, headway));
@@ -274,7 +275,7 @@ public class HeadwayLabeling {
 					if (arrivalTimesList.size() == 2) {
 						String firstArrival = arrivalTimesList.get(0);
 						String secondArrival = arrivalTimesList.get(1);
-						long headway = getHeadway(firstArrival, secondArrival);
+						long headway = GeoPoint.getTimeDifference(firstArrival, secondArrival);
 						String firstArrivalSecondArrivalKey = firstArrival.replaceAll(":", "") + "_" + secondArrival.replaceAll(":", "");
 						
 						arrivalTimesHeadwayMap.add(new Tuple2<String, Long>(firstArrivalSecondArrivalKey, headway));
@@ -334,7 +335,7 @@ public class HeadwayLabeling {
 								
 								if (!nextBusteOutput.getBusCode().equals(currentBusCode)) { //calculate headways just for different buscode 
 
-									long currentHeadway = getHeadway(currentBusteOutput.getTimestamp(), nextBusteOutput.getTimestamp());
+									long currentHeadway = GeoPoint.getTimeDifference(currentBusteOutput.getTimestamp(), nextBusteOutput.getTimestamp());
 									if (currentHeadway < closestHeadway) {
 										closestNextBus = nextBusteOutput;
 										closestHeadway = currentHeadway;
@@ -345,7 +346,7 @@ public class HeadwayLabeling {
 							
 							if (closestNextBus == null) { //when there is only one bus for the route
 								closestNextBus = listBusteOutput.get(i+1);
-								closestHeadway = getHeadway(currentBusteOutput.getTimestamp(), closestNextBus.getTimestamp());
+								closestHeadway = GeoPoint.getTimeDifference(currentBusteOutput.getTimestamp(), closestNextBus.getTimestamp());
 							}
 
 							//checking bus bunching with scheduled headway
@@ -430,25 +431,5 @@ public class HeadwayLabeling {
 				});
 
 		return rddOutput;
-	}
-
-	// in minutes
-	private static long getHeadway(String date1, String date2) {
-		// HH converts hour in 24 hours format (0-23), day calculation
-		SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
-		long diffMinutes = 0;
-
-		try {
-			Date d1 = format.parse(date1);
-			Date d2 = format.parse(date2);
-
-			// in milliseconds
-			long diff = d2.getTime() - d1.getTime();
-			diffMinutes = diff / (60 * 1000);
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return diffMinutes;
 	}
 }
