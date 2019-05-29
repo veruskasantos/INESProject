@@ -5,7 +5,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -15,6 +14,7 @@ import java.util.Map.Entry;
 import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.avro.mapred.tether.OutputProtocol;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -31,6 +31,7 @@ import org.apache.spark.api.java.function.PairFunction;
 import com.clearspring.analytics.util.Lists;
 
 import BULMADependences.BulmaBusteOutput;
+import BULMADependences.WazeData;
 import BULMADependences.WeatherData;
 import PointDependencies.GeoPoint;
 import scala.Tuple2;
@@ -164,7 +165,6 @@ public class MatchingGPSWeatherWaze {
 	private static JavaRDD<String> execute(JavaSparkContext context, JavaRDD<String> busteOutputString,  final String city,
 			String precipitationPath, String wazePath, String stringDate, int minPartitions) {
 		
-		
 		Function2<Integer, Iterator<String>, Iterator<String>> removeHeader = new Function2<Integer, Iterator<String>, Iterator<String>>() {
 
 			public Iterator<String> call(Integer index, Iterator<String> iterator) throws Exception {
@@ -212,11 +212,12 @@ public class MatchingGPSWeatherWaze {
 				stationDataMap.get(stationTimeCode).add(
 						new Tuple2<String, Double>(weatherData.getTime(), weatherData.getPrecipitation()));
 				
-				// lat:lon,data
-				String latLonKey = latitude.substring(0, 3) + ":" + longitude.substring(0, 2);
-				return new Tuple2<String, Object>(latLonKey, weatherData);
+				// hour
+				String timeKey = weatherData.getTime().substring(0, 2);
+				System.out.println(timeKey);
+				return new Tuple2<String, Object>(timeKey, weatherData);
 			}
-		}); //TODO what about group by hour?
+		});
 		
 		// Grouping MatchingGSS output by route-stopID
 		JavaPairRDD<String, Object> rddBusteOutputGrouped = busteOutputString
@@ -229,9 +230,9 @@ public class MatchingGPSWeatherWaze {
 								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(),
 								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), "buste");
 
-						String latLongKey = busteOutput.getLatShape().substring(0, 3) + ":" + busteOutput.getLonShape().substring(0, 2);
-
-						return new Tuple2<String, Object>(latLongKey, busteOutput);
+						String timeKey = busteOutput.getTimestamp().substring(0, 2);
+						System.out.println(timeKey);
+						return new Tuple2<String, Object>(timeKey, busteOutput);
 					}
 				});
 				
@@ -243,7 +244,6 @@ public class MatchingGPSWeatherWaze {
 		 */
 		JavaRDD<String> precipitationOutput = rddGroupedPrecipitation.flatMap(new FlatMapFunction<Tuple2<String,Iterable<Object>>, String>() {
 
-			private List<WeatherData> weatherDataList;
 			private List<BulmaBusteOutput> bulmaBusteOutputList;
 			private List<String> output;
 			
@@ -251,7 +251,6 @@ public class MatchingGPSWeatherWaze {
 			public Iterator<String> call(Tuple2<String, Iterable<Object>> latLonKey_objects)
 					throws Exception {
 				
-				weatherDataList = new ArrayList<WeatherData>();
 				bulmaBusteOutputList = new ArrayList<BulmaBusteOutput>();
 				output = new ArrayList<>();
 				
@@ -259,8 +258,6 @@ public class MatchingGPSWeatherWaze {
 				for (Object obj : listInput) {
 					if (obj instanceof BulmaBusteOutput) {
 						bulmaBusteOutputList.add((BulmaBusteOutput)obj);
-					} else {
-						weatherDataList.add((WeatherData)obj);
 					}
 				}
 				
@@ -286,7 +283,6 @@ public class MatchingGPSWeatherWaze {
 					}
 					
 					//finding closest time data from closest station
-//					String hourGP3S =  timeGP3S.substring(0, 2);
 					String stationGPSTimeCurrent = closestStation + "_" + timeGP3S.substring(0, 2);
 					
 					Long closestTime = Long.MAX_VALUE;
@@ -297,7 +293,6 @@ public class MatchingGPSWeatherWaze {
 						Double precipitation = stationData._2;
 						
 						long currentDifferenceTime = Math.abs(GeoPoint.getTimeDifference(timeGP3S, timeKey)); //check the abs value
-						System.out.println("GPS time: " + timeGP3S + " Station time: " + timeKey + " = " + currentDifferenceTime);
 						if (currentDifferenceTime < closestTime) {
 							closestTimePrecipitation = new Tuple2<String, Double>(timeKey, precipitation);
 						}
@@ -317,43 +312,51 @@ public class MatchingGPSWeatherWaze {
 				return output.iterator(); //TODO SEND TO NEXT RDD, WAZE DATA
 			}
 		});
+//		precipitationOutput.saveAsTextFile("D:/Desktop/UFCG/Projeto INES/INESProject/workspace/Data Analysis/Integration/code/BULMA/data/output/Recife/weather_output");
 		
-//		output.saveAsTextFile("/home/veruska/Documentos/Projeto_INES/INESProject/workspace/Data Analysis/Integration/code/BULMA/data/output/Recife/weather_output");
+//		precipitationOutput.saveAsTextFile("/home/veruska/Documentos/Projeto_INES/INESProject/workspace/Data Analysis/Integration/code/BULMA/data/output/Recife/weather_output");
 		
 		// ---------------------Integration of waze data---------------------
 		String dayWazePath = wazePath + SLASH + "waze_" + city + "_";
 		
+		//
 		JavaRDD<String> alertsString = context.textFile(dayWazePath + "alerts_" + stringDate + ".csv", minPartitions)
 				.mapPartitionsWithIndex(removeHeader, false);
 		
+		//1km
 		JavaRDD<String> jamsString = context.textFile(dayWazePath + "jams_" + stringDate + ".csv", minPartitions)
 				.mapPartitionsWithIndex(removeHeader, false);
 		
 		// 
-		JavaPairRDD<String, Iterable<String>> rddAlertsData = alertsString.mapToPair(new PairFunction<String, String, String>() {
+		JavaPairRDD<String, Iterable<Object>> rddAlertsData = alertsString.mapToPair(new PairFunction<String, String, Object>() {
 
-			public Tuple2<String, String> call(String busStopsString) throws Exception {
-				String[] splittedEntry = busStopsString.split(SEPARATOR);
-				String route = splittedEntry[6].replace(" ", "");
-				String stopID = splittedEntry[2].replace(" ", "");
-				String arrivalTime = splittedEntry[0].replace(" ", "");
+			public Tuple2<String, Object> call(String alertsString) throws Exception {
+				String[] splittedEntry = alertsString.split(SEPARATOR);
+				WazeData alerts = new WazeData(splittedEntry[0], splittedEntry[3], splittedEntry[6], splittedEntry[7],
+						splittedEntry[8], splittedEntry[10], splittedEntry[11], splittedEntry[12], splittedEntry[13], 
+						splittedEntry[14], splittedEntry[16], splittedEntry[17], splittedEntry[18], splittedEntry[10], 
+						splittedEntry[22], splittedEntry[23], splittedEntry[26]);
+
+				String hourKey = null;
 				
 				// route:stopId
-				return new Tuple2<String, String>(route + ":" + stopID, arrivalTime);
+				return new Tuple2<String, Object>(hourKey, alerts);
 			}
 		}).groupByKey(minPartitions); 
 		
 		// 
-		JavaPairRDD<String, Iterable<String>> rddJamsData = jamsString.mapToPair(new PairFunction<String, String, String>() {
+		JavaPairRDD<String, Iterable<Object>> rddJamsData = jamsString.mapToPair(new PairFunction<String, String, Object>() {
 
-			public Tuple2<String, String> call(String busStopsString) throws Exception {
-				String[] splittedEntry = busStopsString.split(SEPARATOR);
-				String route = splittedEntry[6].replace(" ", "");
-				String stopID = splittedEntry[2].replace(" ", "");
-				String arrivalTime = splittedEntry[0].replace(" ", "");
+			public Tuple2<String, Object> call(String jamsString) throws Exception {
+				String[] splittedEntry = jamsString.split(SEPARATOR);
+				WazeData jams = new WazeData(splittedEntry[0], splittedEntry[3], splittedEntry[6], splittedEntry[7],
+						splittedEntry[10], splittedEntry[11], splittedEntry[13], splittedEntry[17], splittedEntry[19], 
+						splittedEntry[20], splittedEntry[21]);
+				
+				String hourKey = null;
 				
 				// route:stopId
-				return new Tuple2<String, String>(route + ":" + stopID, arrivalTime);
+				return new Tuple2<String, Object>(hourKey, jams);
 			}
 		}).groupByKey(minPartitions); 
 		
