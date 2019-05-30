@@ -4,10 +4,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -33,7 +31,9 @@ import org.apache.spark.api.java.function.PairFunction;
 
 import com.clearspring.analytics.util.Lists;
 
-import BULMADependences.BulmaBusteOutput;
+import BULMADependences.AlertData;
+import BULMADependences.JamData;
+import BULMADependences.OutputString;
 import PointDependencies.GeoPoint;
 import scala.Tuple2;
 
@@ -41,17 +41,21 @@ public class HeadwayLabeling {
 
 	//TODO change the index to variable names
 	private static final String SEPARATOR = ",";
+	private static final String SEPARATOR_EXPRESSION = ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)";
 	private static final String SLASH = "/";
 	private static final int BB_THRESHOLD = 5; // headway = 5 is considered bb
 	private static final String OUTPUT_HEADER = "route,tripNum,shapeId,routeFrequency,shapeSequence,shapeLat,shapeLon,distanceTraveledShape,"
-			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,problem,headway,busBunching,nextBusCode";
+			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,problem,alertDateTime,alertSubtype,alertType,alertRoadType,"
+			+ "alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,alertReportMood,alertReportRating,alertSpeed,alertLatitude,"
+			+ "alertLongitude,alertDistanceToClosestShapePoint,alertIsJamUnifiedAlert,alertInScale,jamUpdateDateTime,jamExpirationDateTime,jamBlockType,"
+			+ "jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,jamDistanceToClosestShapePoint,headway,busBunching,nextBusCode";
 
 	private static HashMap<String, HashMap<String, Long>> scheduledHeadwaysMap = new HashMap<String, HashMap<String, Long>>();
 
 	public static void main(String[] args) throws IOException, URISyntaxException, ParseException {
 
 		if (args.length < 5) {
-			System.err.println("Usage: <city> <output Buste directory> <GTFS path> <output path> <number of partitions>");
+			System.err.println("Usage: <city> <integrated data directory> <GTFS path> <output path> <number of partitions>");
 			System.exit(1);
 		}
 
@@ -99,6 +103,7 @@ public class HeadwayLabeling {
 					line = iterator.next();
 					String timestamp = line.split(SEPARATOR)[13];
 					
+					//TODO maybe there is no more this line
 					if (!line.isEmpty() && !timestamp.equals("-")) { //skip empty line and line/shape without gps (the bus did not go to that stop)
 						output.add(line);
 					}
@@ -116,7 +121,7 @@ public class HeadwayLabeling {
 		for (FileStatus file : fileStatus) {
 
 			String dirName = file.getPath().getName();
-			if (dirName.contains("BuLMABusTE")) {
+			if (dirName.contains("Integrated_Data")) {
 
 				String dailyPathDir = pathBusteOutput + SLASH + dirName;
 				FileStatus[] fileStatusDaily = fs.listStatus(new Path(dailyPathDir));
@@ -137,7 +142,7 @@ public class HeadwayLabeling {
 
 				String stringDate = dirName.substring(dirName.lastIndexOf("_") + 1, dirName.length());
 
-				JavaRDD<String> result = execute(context, busteOutputString, stopTimesShapesPath, city, minPartitions);
+				JavaRDD<String> result = execute(context, busteOutputString, stopTimesShapesPath, output, stringDate, city, minPartitions);
 
 				/**
 				 * Inserts a header into each output file
@@ -158,14 +163,14 @@ public class HeadwayLabeling {
 					}
 				};
 
-				result.mapPartitionsWithIndex(insertHeader, false).saveAsTextFile(output + SLASH + stringDate);
+				result.mapPartitionsWithIndex(insertHeader, false).saveAsTextFile(output + SLASH + "output_" + stringDate);
 			}
 		}
 	}
 
 	@SuppressWarnings("serial")
 	private static JavaRDD<String> execute(JavaSparkContext context, JavaRDD<String> busteOutputString,
-			String stopTimesShapesPath, final String city, int minPartitions) {
+			String stopTimesShapesPath, String outputPath, String stringDate, final String city, int minPartitions) {
 		
 		Function2<Integer, Iterator<String>, Iterator<String>> removeHeader = new Function2<Integer, Iterator<String>, Iterator<String>>() {
 
@@ -184,28 +189,27 @@ public class HeadwayLabeling {
 		// distance_traveled, bus_code, gps_id, gps_lat, gps_lon,
 		// distance_to_shape_point/-, gps_timestamp, stop_id, trip_problem_code
 
-		// Grouping BUSTE output by route-stopID
-		JavaPairRDD<String, Iterable<BulmaBusteOutput>> rddBusteOutputGrouped = busteOutputString
-				.mapToPair(new PairFunction<String, String, BulmaBusteOutput>() {
+		// Grouping Integrated data by route-stopID
+		JavaPairRDD<String, Iterable<OutputString>> rddIntegratedDataGrouped = busteOutputString
+				.mapToPair(new PairFunction<String, String, OutputString>() {
 
-					public Tuple2<String, BulmaBusteOutput> call(String bulmaOutputString) throws Exception {
-						StringTokenizer st = new StringTokenizer(bulmaOutputString, SEPARATOR);
-						BulmaBusteOutput busteOutput = new BulmaBusteOutput(st.nextToken(), st.nextToken(),
+					public Tuple2<String, OutputString> call(String bulmaOutputString) throws Exception {
+						StringTokenizer st = new StringTokenizer(bulmaOutputString, SEPARATOR_EXPRESSION);
+						
+						OutputString integratedData = new OutputString(st.nextToken(), st.nextToken(),
 								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(),
 								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(),
-								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), "buste");
+								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), new AlertData(st.nextToken(), 
+								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(),
+								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), 
+								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), "aux"), new JamData(st.nextToken(), 
+								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), 
+								st.nextToken(), st.nextToken()));
 
-						String stopID = busteOutput.getStopID();
+						String stopID = integratedData.getStopID();
+						String routeStopIDKey = integratedData.getRoute() + ":" + stopID;
 
-						// Create the stops-busteOutput map
-						// if (!stopsBusteMap.containsKey(stopID)) {
-						// stopsBusteMap.put(stopID, new ArrayList<BulmaOutput>());
-						// }
-						// stopsBusteMap.get(stopID).add(busteOutput);
-
-						String routeStopIDKey = busteOutput.getRoute() + ":" + stopID;
-
-						return new Tuple2<String, BulmaBusteOutput>(routeStopIDKey, busteOutput);
+						return new Tuple2<String, OutputString>(routeStopIDKey, integratedData);
 					}
 				}).groupByKey(minPartitions);
 
@@ -304,34 +308,31 @@ public class HeadwayLabeling {
 			}
 		}).groupByKey(minPartitions);
 		
-		//TODO update this name, and test with qgis
-		rddBusStopsGrouped.saveAsTextFile("D:/Desktop/UFCG/Projeto INES/INESProject/workspace/Data Analysis/Integration/code/BULMA/data/output/Recife/scheduled_hd");
-		
-		// rddBusStopsGrouped.saveAsTextFile("/home/veruska/Documentos/Projeto_INES/INESProject/workspace/Data Analysis/Integration/code/BULMA/data/output/Recife/scheduled_hd");
+		 rddBusStopsGrouped.saveAsTextFile(outputPath + SLASH + "scheduled_hd_" + stringDate);
 		
 		// Calculate the headway between the buses, considering same route, same stop and same day
 		// Headway: time difference for the bus that is in front
-		JavaPairRDD<String, List<BulmaBusteOutput>> rddHeadwayLabeling = rddBusteOutputGrouped.mapToPair(
-				new PairFunction<Tuple2<String, Iterable<BulmaBusteOutput>>, String, List<BulmaBusteOutput>>() {
+		JavaRDD<String> rddLabeledIntegratedOutput = rddIntegratedDataGrouped.flatMap(
+				new FlatMapFunction<Tuple2<String, Iterable<OutputString>>, String>() {
 
-					public Tuple2<String, List<BulmaBusteOutput>> call(
-							Tuple2<String, Iterable<BulmaBusteOutput>> routeStopID_BulmaBusteOutput) throws Exception {
+					public Iterator<String> call(
+							Tuple2<String, Iterable<OutputString>> routeStopID_BulmaBusteOutput) throws Exception {
 						
 						String routeStopID = routeStopID_BulmaBusteOutput._1;
-						List<BulmaBusteOutput> listBusteOutput = Lists.newArrayList(routeStopID_BulmaBusteOutput._2);
+						List<OutputString> listBusteOutput = Lists.newArrayList(routeStopID_BulmaBusteOutput._2);
 						Collections.sort(listBusteOutput);
 
-						List<BulmaBusteOutput> listBusteOutputHeadway = new ArrayList<>();
+						List<String> labeledIntegratedData = new ArrayList<>();
 
 						for (int i = 0; i < listBusteOutput.size()-2; i++) {// buses of the same route in a same stop
-							BulmaBusteOutput currentBusteOutput = listBusteOutput.get(i); // avoid comparison with the same row
+							OutputString currentBusteOutput = listBusteOutput.get(i); // avoid comparison with the same row
 							String currentBusCode = currentBusteOutput.getBusCode();
 							
-							BulmaBusteOutput closestNextBus = null;
+							OutputString closestNextBus = null;
 							long closestHeadway = Long.MAX_VALUE;
 
 							for (int j = i+1; j < listBusteOutput.size()-1; j++) {
-								BulmaBusteOutput nextBusteOutput = listBusteOutput.get(j);
+								OutputString nextBusteOutput = listBusteOutput.get(j);
 								
 								if (!nextBusteOutput.getBusCode().equals(currentBusCode)) { //calculate headways just for different buscode 
 
@@ -389,10 +390,10 @@ public class HeadwayLabeling {
 							currentBusteOutput.setNextBusCode(closestNextBus.getBusCode());
 							currentBusteOutput.setBusBunching(busBunching);
 							
-							listBusteOutputHeadway.add(currentBusteOutput);
+							labeledIntegratedData.add(currentBusteOutput.getLabeledIntegratedDataString());
 						}
 
-						return new Tuple2<String, List<BulmaBusteOutput>>(routeStopID, listBusteOutputHeadway);
+						return labeledIntegratedData.iterator();
 					}
 				});
 		
@@ -402,34 +403,34 @@ public class HeadwayLabeling {
 		// distance_to_shape_point/-, gps_timestamp, stop_id, trip_problem_code,
 		// headway, bus_bunching, next_bus_code
 
-		JavaRDD<String> rddOutput = rddHeadwayLabeling
-				.flatMap(new FlatMapFunction<Tuple2<String, List<BulmaBusteOutput>>, String>() {
+//		JavaRDD<String> rddOutput = rddHeadwayLabeling
+//				.flatMap(new FlatMapFunction<Tuple2<String, List<OutputString>>, String>() {
+//
+//					@Override
+//					public Iterator<String> call(Tuple2<String, List<OutputString>> routeStopID_rddHeadway)
+//							throws Exception {
+//
+//						List<String> listOutput = new ArrayList<>();
+//						for (OutputString line : routeStopID_rddHeadway._2) {
+//
+//							String newOutput = line.getRoute() + SEPARATOR + line.getTripNum() + SEPARATOR
+//									+ line.getShapeId() + SEPARATOR + line.getRouteFrequency() + SEPARATOR
+//									+ line.getShapeSequence() + SEPARATOR + line.getLatShape() + SEPARATOR
+//									+ line.getLonShape() + SEPARATOR + line.getDistance() + SEPARATOR
+//									+ line.getGpsPointId() + SEPARATOR + line.getLatGPS() + SEPARATOR 
+//									+ line.getLonGPS() + SEPARATOR + line.getDistanceToShapePoint() 
+//									+ SEPARATOR + line.getGps_datetime() + SEPARATOR + line.getStopID() 
+//									+ SEPARATOR + line.getTripProblem() + SEPARATOR + line.getBusCode() 
+//									+ SEPARATOR + line.getHeadway() + SEPARATOR + line.isBusBunching() 
+//									+ SEPARATOR + line.getNextBusCode();
+//
+//							listOutput.add(line.getLabeledIntegratedDataString());
+//						}
+//
+//						return listOutput.iterator();
+//					}
+//				});
 
-					@Override
-					public Iterator<String> call(Tuple2<String, List<BulmaBusteOutput>> routeStopID_rddHeadway)
-							throws Exception {
-
-						List<String> listOutput = new ArrayList<>();
-						for (BulmaBusteOutput line : routeStopID_rddHeadway._2) {
-
-							String newOutput = line.getRoute() + SEPARATOR + line.getTripNum() + SEPARATOR
-									+ line.getShapeId() + SEPARATOR + line.getRouteFrequency() + SEPARATOR
-									+ line.getShapeSequence() + SEPARATOR + line.getLatShape() + SEPARATOR
-									+ line.getLonShape() + SEPARATOR + line.getDistance() + SEPARATOR
-									+ line.getGpsPointId() + SEPARATOR + line.getLatGPS() + SEPARATOR 
-									+ line.getLonGPS() + SEPARATOR + line.getDistanceToShapePoint() 
-									+ SEPARATOR + line.getGps_datetime() + SEPARATOR + line.getStopID() 
-									+ SEPARATOR + line.getTripProblem() + SEPARATOR + line.getBusCode() 
-									+ SEPARATOR + line.getHeadway() + SEPARATOR + line.isBusBunching() 
-									+ SEPARATOR + line.getNextBusCode();
-
-							listOutput.add(newOutput);
-						}
-
-						return listOutput.iterator();
-					}
-				});
-
-		return rddOutput;
+		return rddLabeledIntegratedOutput;
 	}
 }

@@ -47,7 +47,10 @@ public class MatchingGPSWeatherWaze {
 	private static Map<String, Tuple2<String, String>> stationCoordinatesMap;
 	private static Map<String, List<Tuple2<String, Double>>> stationDataMap;
 	private static final String OUTPUT_HEADER = "route,tripNum,shapeId,routeFrequency,shapeSequence,shapeLat,shapeLon,distanceTraveledShape,"
-			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,problem,precipitationTime,precipitation";
+			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,problem,alertDateTime,alertSubtype,alertType,alertRoadType,"
+			+ "alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,alertReportMood,alertReportRating,alertSpeed,alertLatitude,"
+			+ "alertLongitude,alertDistanceToClosestShapePoint,alertIsJamUnifiedAlert,alertInScale,jamUpdateDateTime,jamExpirationDateTime,jamBlockType,"
+			+ "jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,jamDistanceToClosestShapePoint";
 	
 	public static void main(String[] args) throws IOException, URISyntaxException, ParseException {
 
@@ -374,7 +377,6 @@ public class MatchingGPSWeatherWaze {
 					
 					alertMatchingOutput.add(new Tuple2<String, Object>(hourDateKey, matchingGP3SP));
 				}
-				
 				return alertMatchingOutput.iterator();
 			}
 		});
@@ -387,12 +389,27 @@ public class MatchingGPSWeatherWaze {
 		// Jam data grouped by hour:date, jam
 		JavaPairRDD<String, Object> rddJamsData = jamsString.mapToPair(new PairFunction<String, String, Object>() {
 
-			public Tuple2<String, Object> call(String jamsString) throws Exception {
-				String[] splittedEntry = jamsString.split(SEPARATOR_WAZE);
+			public Tuple2<String, Object> call(String string) throws Exception {
+				String jamString = string.replace(",,", ",null,"); //to fix empty fields in the middle
+				String[] splittedEntry = jamString.split(SEPARATOR_WAZE);
+				
+				String blockDescription = null;
+				try {
+					blockDescription = splittedEntry[20];
+				} catch (ArrayIndexOutOfBoundsException e) {
+					//block description empty
+				}
+				
+				String blockExpiration = null;
+				try {
+					blockDescription = splittedEntry[21];
+				} catch (ArrayIndexOutOfBoundsException e) {
+					//block expiration empty
+				}
+				
 				JamData jams = new JamData(splittedEntry[0], splittedEntry[3], splittedEntry[6], splittedEntry[7],
-						splittedEntry[10], splittedEntry[11], splittedEntry[13], splittedEntry[17], splittedEntry[19], 
-						splittedEntry[20], splittedEntry[21]);
-				//TODO see what is empty and how to solve it
+						splittedEntry[8], splittedEntry[12], splittedEntry[14], splittedEntry[18], 
+						blockDescription, blockExpiration, splittedEntry[23]);
 				
 				//hour:date
 				String hourDateKey = jams.getJamUpdateTime().substring(0, 3) + stringDate;
@@ -461,11 +478,6 @@ public class MatchingGPSWeatherWaze {
 					
 					output = matchingGP3SP.getIntegratedOutputString();
 					jamMatchingOutput.add(output);
-					
-					//hour:date
-					//String hourDateKey = matchingGP3SP.getTimestamp().substring(0, 3) + stringDate;
-					
-					//jamMatchingOutput.add(new Tuple2<String, Object>(hourDateKey, matchingGP3SP));
 				}
 				
 				return jamMatchingOutput.iterator();

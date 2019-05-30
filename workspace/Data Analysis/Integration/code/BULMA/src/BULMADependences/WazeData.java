@@ -18,7 +18,7 @@ public class WazeData implements Serializable{
 		List<Double> latLonList = new ArrayList<>();
 		String[] coordinatesSplitted = coordinates.split(":");
 		
-		latLonList.add(Double.valueOf(coordinatesSplitted[2].replace("}\"", ""))); //lat = y
+		latLonList.add(Double.valueOf(coordinatesSplitted[2].replace("}", "").replace("\"", "").replace("]", ""))); //lat = y
 		latLonList.add(Double.valueOf(coordinatesSplitted[1].substring(0, 
 				coordinatesSplitted[1].indexOf(",")))); //lon = x
 		

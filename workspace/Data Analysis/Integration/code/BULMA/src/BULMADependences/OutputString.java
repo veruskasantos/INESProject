@@ -69,6 +69,32 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 		this.distanceToShapePoint = distanceToShapePoint;
 	}
 	
+//	Constructor of integrated data for headway labeled
+	public OutputString(String route, String tripNum, String shapeId, String routeFrequency, String shapeSequence, String latShape,
+			String lonShape, String distanceTraveled, String busCode, String gpsPointId, String latGPS, String lonGPS, String
+			distanceToShapePoint, String timestamp, String stopID, String tripProblem, AlertData alertData, JamData jamData) {
+		
+		this.tripNum = tripNum;
+		this.route = route;
+		this.shapeId = shapeId;
+		this.routeFrequency = routeFrequency;
+		this.shapeSequence = shapeSequence;
+		this.latShape = Double.valueOf(latShape);
+		this.lonShape = Double.valueOf(lonShape);
+		this.gpsPointId = gpsPointId;
+		this.busCode = busCode;
+		this.timestamp = timestamp.split(" ")[1];
+		this.latGPS = latGPS;
+		this.lonGPS = lonGPS;
+		this.distanceTraveled = distanceTraveled;
+		this.tripProblem = tripProblem;
+		this.gps_datetime = timestamp; // date and time
+		this.stopID = stopID;
+		this.distanceToShapePoint = distanceToShapePoint;
+		this.alertData = alertData;
+		this.jamData = jamData;
+	}
+	
 	public String getTripNum() {
 		return tripNum;
 	}
@@ -317,13 +343,30 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 				+ ", busBunching=" + busBunching + "]";
 	}
 	
+	public String getLabeledIntegratedDataString() {
+		return getIntegratedOutputString() + SEPARATOR + this.headway + SEPARATOR + this.busBunching + SEPARATOR +
+				this.nextBusCode;
+	}
+	
 	public String getIntegratedOutputString() {
+		// Sometimes there are no jam or alert for the gps
+		String alertDataString = "-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-";
+		if (alertData != null) {
+			alertDataString = alertData.getDataString();
+		}
+		
+		String jamDataString = "-,-,-,-,-,-,-,-,-";
+		if (jamData != null) {
+			jamDataString = jamData.getDataString();
+		}
+		
 		return this.getRoute() + SEPARATOR + this.getTripNum() + SEPARATOR + this.getShapeId() + SEPARATOR + 
 				this.getRouteFrequency() + SEPARATOR + this.getShapeSequence() + SEPARATOR + this.getLatShape() +
-				SEPARATOR + this.getLonShape() + SEPARATOR + this.getDistance() + SEPARATOR + this.getGpsPointId() + 
-				SEPARATOR + this.getLatGPS() + SEPARATOR + this.getLonGPS() + SEPARATOR + this.getDistanceToShapePoint() + 
-				SEPARATOR + this.getGps_datetime() + SEPARATOR + this.getStopID() + SEPARATOR + this.getTripProblem() + 
-				SEPARATOR + this.getBusCode() + this.getAlertData().getDataString() + this.getJamData().getDataString();
+				SEPARATOR + this.getLonShape() + SEPARATOR + this.getDistance() + SEPARATOR + this.getBusCode() + 
+				SEPARATOR + this.getGpsPointId() + SEPARATOR + this.getLatGPS() + SEPARATOR + this.getLonGPS() + 
+				SEPARATOR + this.getDistanceToShapePoint() + SEPARATOR + this.getGps_datetime() + SEPARATOR + 
+				this.getStopID() + SEPARATOR + this.getTripProblem() + SEPARATOR + alertDataString + SEPARATOR +
+				jamDataString;
 				//+ SEPARATOR + this.getHeadway() + SEPARATOR + this.isBusBunching() + SEPARATOR + this.getNextBusCode();
 	}
 }

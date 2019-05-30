@@ -24,7 +24,7 @@ public class JamData extends WazeData {
 		this.jamDelay = Integer.valueOf(delay);
 		this.jamLength = Integer.valueOf(length);
 		this.jamLevel = Integer.valueOf(level);
-		this.jamCoordinates = new ArrayList<String>(Arrays.asList(lineCoordinates.replace("[", "").replaceAll("},{", "};{").split(";"))); // [{"x":-34.906513,"y":-8.139684},{"x":-34.905742,"y":-8.139735},{"x":-34.905688,"y":-8.139741},{"x":-34.904807,"y":-8.13983}]
+		this.jamCoordinates = new ArrayList<String>(Arrays.asList(lineCoordinates.replace("[", "").replaceAll("\\},\\{", "};{").split(";"))); // [{"x":-34.906513,"y":-8.139684},{"x":-34.905742,"y":-8.139735},{"x":-34.905688,"y":-8.139741},{"x":-34.904807,"y":-8.13983}]
 		this.jamSeverity = Integer.valueOf(severity);
 		this.jamSpeedKM = Double.valueOf(speedKMH);
 		this.jamBlockDesc = blockDescription;
@@ -34,9 +34,34 @@ public class JamData extends WazeData {
 		this.jamUpdateTime = jamUpdateDateTime.split(" ")[1];
 		this.jamUpdateDate = jamUpdateDateTime.split(" ")[0];
 		
-		this.jamExpirationDateTime = getDateTimeFromMillis(expirationDateTime);
-		this.jamExpirationTime = jamUpdateDateTime.split(" ")[1];
-		this.jamExpirationDate = jamUpdateDateTime.split(" ")[0];
+		if (expirationDateTime != null) { 
+			this.jamExpirationDateTime = getDateTimeFromMillis(expirationDateTime);
+			this.jamExpirationTime = jamUpdateDateTime.split(" ")[1];
+			this.jamExpirationDate = jamUpdateDateTime.split(" ")[0];
+		}
+	}
+	
+	//jamUpdateDate,jamExpirationDateTime,jamBlockType,jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,jamDistanceToClosestShapePoint
+	public JamData(String updateDateTime, String expirationDateTime, String blockType, String delay, String length, 
+			String level, String severity, String speedKMH,  String distanceToClosestShapePoint) {
+		
+		this.jamDelay = Integer.valueOf(delay);
+		this.jamLength = Integer.valueOf(length);
+		this.jamLevel = Integer.valueOf(level);
+		this.jamSeverity = Integer.valueOf(severity);
+		this.jamSpeedKM = Double.valueOf(speedKMH);
+		this.jamBlockType = blockType;
+		this.jamUpdateDateTime = updateDateTime;
+		this.jamUpdateTime = jamUpdateDateTime.split(" ")[1];
+		this.jamUpdateDate = jamUpdateDateTime.split(" ")[0];
+		
+		if (expirationDateTime != null) { 
+			this.jamExpirationDateTime = getDateTimeFromMillis(expirationDateTime);
+			this.jamExpirationTime = jamUpdateDateTime.split(" ")[1];
+			this.jamExpirationDate = jamUpdateDateTime.split(" ")[0];
+		}
+		this.distanceToClosestShapePoint = Double.valueOf(distanceToClosestShapePoint);
+		
 	}
 	
 	public List<Tuple2<Double, Double>> getJamLatLon() {
@@ -186,10 +211,11 @@ public class JamData extends WazeData {
 		this.distanceToClosestShapePoint = distanceToClosestShapePoint;
 	}
 
+	//jamUpdateDate,jamExpirationDateTime,jamBlockType,jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,distanceToClosestShapePoint
 	public String getDataString() {
-		return jamUpdateDate + SEPARATOR + jamExpirationDateTime + SEPARATOR + jamBlockType + SEPARATOR + 
-				jamCoordinates + SEPARATOR + jamDelay + SEPARATOR + jamLength + SEPARATOR + jamLevel + SEPARATOR + 
-				jamSeverity + SEPARATOR + jamSpeedKM + SEPARATOR + distanceToClosestShapePoint;
+		return jamUpdateDateTime + SEPARATOR + jamExpirationDateTime + SEPARATOR + jamBlockType + SEPARATOR + 
+				jamDelay + SEPARATOR + jamLength + SEPARATOR + jamLevel + SEPARATOR + jamSeverity + SEPARATOR + 
+				jamSpeedKM + SEPARATOR + distanceToClosestShapePoint;
 	}
 	
 	@Override

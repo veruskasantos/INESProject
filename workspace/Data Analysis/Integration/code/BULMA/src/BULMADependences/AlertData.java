@@ -40,6 +40,38 @@ public class AlertData extends WazeData {
 		this.alertRoadType = roadType;
 	}
 	
+//	alertDate,alertSubtype,alertType,alertRoadType,alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,
+//	alertReportMood,alertReportRating,alertSpeed,alertLatitude,alertLongitude,alertDistanceToClosestShapePoint,alertIsJamUnifiedAlert,
+//	alertInScale,alertLocation
+	
+	//After integrated data: variables of interest
+	public AlertData(String publicationTime, String subtype, String type, String roadType, String confidence, String nComments,
+			String nImages, String nThumbsUp, String reliability, String reportMood, String reportRating, String speed, 
+			String latitude, String longitude, String distanceToClosestShapePoint, String isJamUnifiedAlert, String inScale,
+			String aux) {
+		
+		this.alertConfidence = Integer.valueOf(confidence);
+		this.alertInScale = Boolean.valueOf(inScale);
+		this.alertIsJamUnifiedAlert = Boolean.valueOf(isJamUnifiedAlert);
+		this.alertLatitude = Double.valueOf(latitude); 
+		this.alertLongitude = Double.valueOf(longitude);
+		this.alertNComments = Integer.valueOf(nComments);
+		this.alertNImages = Integer.valueOf(nImages);
+		this.alertNThumbsUp = Integer.valueOf(nThumbsUp);
+		this.alertDateTime = publicationTime;
+		this.alertTime = alertDateTime.split(" ")[1];
+		this.alertDate = alertDateTime.split(" ")[0];
+		this.alertReliability = Integer.valueOf(reliability);
+		this.alertReportMood = Integer.valueOf(reportMood);
+		this.alertReportRating = Double.valueOf(reportRating);
+		this.alertSpeed = Double.valueOf(speed);
+		this.alertSubtype = subtype;
+		this.alertType = type;
+		this.alertRoadType = roadType;
+		this.distanceToClosestShapePoint = Double.valueOf(distanceToClosestShapePoint);
+	}
+	
+	
 	public List<Double> getAlertLocation() {
 		return alertLocation;
 	}
@@ -220,17 +252,18 @@ public class AlertData extends WazeData {
 		this.distanceToClosestShapePoint = distanceToClosestShapePoint;
 	}
 
+	//alertDate,alertSubtype,alertType,alertRoadType,alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,alertReportMood,alertReportRating,alertSpeed,alertLatitude,alertLongitude,distanceToClosestShapePoint,alertIsJamUnifiedAlert,alertInScale
 	public String getDataString() {
-		return  alertDate + SEPARATOR + alertSubtype + SEPARATOR + alertType + SEPARATOR + alertRoadType + SEPARATOR + 
+		return  alertDateTime + SEPARATOR + alertSubtype + SEPARATOR + alertType + SEPARATOR + alertRoadType + SEPARATOR + 
 				alertConfidence + SEPARATOR + alertNComments + SEPARATOR + alertNImages + SEPARATOR + alertNThumbsUp + 
 				SEPARATOR + alertReliability + SEPARATOR + alertReportMood + SEPARATOR + alertReportRating + SEPARATOR +
 				alertSpeed + SEPARATOR + alertLatitude + SEPARATOR + alertLongitude + SEPARATOR + distanceToClosestShapePoint +
-				SEPARATOR + alertIsJamUnifiedAlert + SEPARATOR + alertInScale + SEPARATOR + alertLocation;
+				SEPARATOR + alertIsJamUnifiedAlert + SEPARATOR + alertInScale;
 	}
 	
 	@Override
 	public String toString() {
-		return "AlertData [alertDate=" + alertDate + ", alertSubtype=" + alertSubtype + ", alertType=" + alertType
+		return "AlertData [alertDate=" + alertDateTime + ", alertSubtype=" + alertSubtype + ", alertType=" + alertType
 				+ ", alertRoadType=" + alertRoadType + ", alertCondidence=" + alertConfidence + ", alertNComments="
 				+ alertNComments + ", alertNImages=" + alertNImages + ", alertNThumbsUp=" + alertNThumbsUp
 				+ ", alertReliability=" + alertReliability + ", alertReportMood=" + alertReportMood
