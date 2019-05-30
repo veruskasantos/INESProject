@@ -23,6 +23,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
@@ -30,10 +31,8 @@ import org.apache.spark.api.java.function.PairFunction;
 import com.clearspring.analytics.util.Lists;
 
 import BULMADependences.AlertData;
-import BULMADependences.BulmaBusteOutput;
 import BULMADependences.JamData;
 import BULMADependences.OutputString;
-import BULMADependences.WazeData;
 import BULMADependences.WeatherData;
 import PointDependencies.GeoPoint;
 import scala.Tuple2;
@@ -140,7 +139,8 @@ public class MatchingGPSWeatherWaze {
 
 				String stringDate = dirName.substring(dirName.lastIndexOf("_") + 1, dirName.length());
 
-				JavaRDD<String> result = execute(context, matchingGSSOutputString, city, precipitationPath, wazePath, stringDate, minPartitions);
+				JavaRDD<String> result = execute(context, matchingGSSOutputString, city, precipitationPath, wazePath, 
+						output, stringDate, minPartitions);
 
 				/**
 				 * Inserts a header into each output file
@@ -160,14 +160,14 @@ public class MatchingGPSWeatherWaze {
 						return output.iterator();
 					}
 				};
-				result.mapPartitionsWithIndex(insertHeader, false).saveAsTextFile(output + SLASH + stringDate);
+				result.mapPartitionsWithIndex(insertHeader, false).saveAsTextFile(output + SLASH + "Integrated_Data_" + stringDate);
 			}
 		}
 	}
 	
 	@SuppressWarnings("serial")
 	private static JavaRDD<String> execute(JavaSparkContext context, JavaRDD<String> busteOutputString,  final String city,
-			String precipitationPath, String wazePath, final String stringDate, int minPartitions) {
+			String precipitationPath, String wazePath, final String outputPath, final String stringDate, int minPartitions) {
 		
 		Function2<Integer, Iterator<String>, Iterator<String>> removeHeader = new Function2<Integer, Iterator<String>, Iterator<String>>() {
 
@@ -218,11 +218,12 @@ public class MatchingGPSWeatherWaze {
 				
 				// hour
 				String timeKey = weatherData.getTime().substring(0, 2);
+				
 				return new Tuple2<String, Object>(timeKey, weatherData);
 			}
 		});
 		
-		rddPrecipitations.saveAsTextFile("/home/veruska/Documentos/Projeto_INES/INESProject/workspace/Data Analysis/Integration/code/BULMA/data/output/Recife/prec_output");
+		rddPrecipitations.saveAsTextFile(outputPath + SLASH + "precipitation_aux_" + stringDate);
 		
 		/**
 		 * Matching precipitation with gps and gtfs data
@@ -314,7 +315,6 @@ public class MatchingGPSWeatherWaze {
 			}
 		});
 		
-		
 		//Union of precipitation matching with alert data
 		JavaPairRDD<String, Iterable<Object>> rddGroupedPrecipitationAlert = rddMatchedPrecipitation.union(rddAlertsData)
 				.groupByKey(minPartitions);
@@ -379,13 +379,12 @@ public class MatchingGPSWeatherWaze {
 			}
 		});
 		
-		rddMatchedAlert.saveAsTextFile("/home/veruska/Documentos/Projeto_INES/INESProject/workspace/Data Analysis/Integration/code/BULMA/data/output/Recife/alert_output");
+		rddMatchedAlert.saveAsTextFile(outputPath + SLASH + "alert_aux_" + stringDate);
 		
-		//
 		JavaRDD<String> jamsString = context.textFile(dayWazePath + "jams_" + stringDate + ".csv", minPartitions)
 				.mapPartitionsWithIndex(removeHeader, false);
 		
-		// 
+		// Jam data grouped by hour:date, jam
 		JavaPairRDD<String, Object> rddJamsData = jamsString.mapToPair(new PairFunction<String, String, Object>() {
 
 			public Tuple2<String, Object> call(String jamsString) throws Exception {
@@ -393,17 +392,15 @@ public class MatchingGPSWeatherWaze {
 				JamData jams = new JamData(splittedEntry[0], splittedEntry[3], splittedEntry[6], splittedEntry[7],
 						splittedEntry[10], splittedEntry[11], splittedEntry[13], splittedEntry[17], splittedEntry[19], 
 						splittedEntry[20], splittedEntry[21]);
+				//TODO see what is empty and how to solve it
 				
 				//hour:date
 				String hourDateKey = jams.getJamUpdateTime().substring(0, 3) + stringDate;
-				
-				// hour:date
 				return new Tuple2<String, Object>(hourDateKey, jams);
 			}
 		});
 		
-		
-		//Union of precipitation matching with alert data
+		//Union of precipitation matching with jam data
 		JavaPairRDD<String, Iterable<Object>> rddGroupedAlertJam = rddMatchedAlert.union(rddJamsData)
 				.groupByKey(minPartitions);
 		
@@ -412,17 +409,69 @@ public class MatchingGPSWeatherWaze {
 		 * 
 		 * @return the output: precipitation, alerts and jams grouped
 		 */
-		JavaPairRDD<String, List<OutputString>> rddHeadwayLabeling = rddGroupedAlertJam.mapToPair(new PairFunction<Tuple2<String,Iterable<Object>>, String, List<OutputString>>() {
+		JavaRDD<String> rddAllDataMatched = rddGroupedAlertJam.flatMap(new FlatMapFunction<Tuple2<String,Iterable<Object>>,
+				String>() {
 
+			List<JamData> wazeData;
+			List<OutputString> alertOutput;
+			List<String> jamMatchingOutput;
+				
 			@Override
-			public Tuple2<String, List<OutputString>> call(Tuple2<String, Iterable<Object>> t) throws Exception {
-				// TODO Implements jams integration with same logic, 1 km
-				return null;
+			public Iterator<String> call(Tuple2<String, Iterable<Object>> hourDateKey_objects) throws Exception {
+				wazeData = new ArrayList<>();
+				alertOutput = new ArrayList<>();
+				jamMatchingOutput = new ArrayList<>();
+				
+				List<Object> listInput = Lists.newArrayList(hourDateKey_objects._2);
+				for (Object obj : listInput) {
+					if (obj instanceof OutputString) {
+						alertOutput.add((OutputString)obj);
+					} else {
+						wazeData.add((JamData)obj);
+					}
+				}
+				
+				// Find the closest jam
+				for (OutputString matchingGP3SP : alertOutput) {
+					String output;
+					Double latGP3SP = matchingGP3SP.getLatShape();
+					Double lonGP3SP = matchingGP3SP.getLonShape();
+					
+					double closestDistanceJam = ALERT_DISTANCE_THRESHOLD;
+					JamData closestJam = null;
+					
+					for (JamData jam : wazeData) { //check each jam alert of the same hour
+						
+						for (Tuple2<Double, Double> coordinates : jam.getJamLatLon()) { //check all the coordinates of the jam
+							
+							Double latJam = coordinates._1;
+							Double lonJam = coordinates._2;
+							double currentDistance = GeoPoint.getDistanceInMeters(latGP3SP, lonGP3SP, latJam, lonJam);
+							if (currentDistance < closestDistanceJam) {
+								closestDistanceJam = currentDistance;
+								closestJam = jam;
+							}
+						}
+					}
+					
+					if (closestJam != null) {
+						closestJam.setDistanceToClosestShapePoint(closestDistanceJam);
+						matchingGP3SP.setJamData(closestJam);
+					}
+					
+					output = matchingGP3SP.getIntegratedOutputString();
+					jamMatchingOutput.add(output);
+					
+					//hour:date
+					//String hourDateKey = matchingGP3SP.getTimestamp().substring(0, 3) + stringDate;
+					
+					//jamMatchingOutput.add(new Tuple2<String, Object>(hourDateKey, matchingGP3SP));
+				}
+				
+				return jamMatchingOutput.iterator();
 			}
 		});
 		
-		
-		return null;
-		
+		return rddAllDataMatched;
 	}
 }

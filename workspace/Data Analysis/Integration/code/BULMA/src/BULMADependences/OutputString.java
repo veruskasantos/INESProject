@@ -5,6 +5,7 @@ import java.io.Serializable;
 public class OutputString implements Serializable, Comparable<OutputString>{
 
 	private static final long serialVersionUID = 1L;
+	private static final String SEPARATOR = ",";
 	private String outputString;
 	
 	// Matching GPS - Shape - Stop
@@ -314,5 +315,15 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 				+ ", precipitation=" + precipitation + ", precipitationTime=" + precipitationTime + ", alertData="
 				+ alertData + ", jamData=" + jamData + ", headway=" + headway + ", nextBusCode=" + nextBusCode
 				+ ", busBunching=" + busBunching + "]";
+	}
+	
+	public String getIntegratedOutputString() {
+		return this.getRoute() + SEPARATOR + this.getTripNum() + SEPARATOR + this.getShapeId() + SEPARATOR + 
+				this.getRouteFrequency() + SEPARATOR + this.getShapeSequence() + SEPARATOR + this.getLatShape() +
+				SEPARATOR + this.getLonShape() + SEPARATOR + this.getDistance() + SEPARATOR + this.getGpsPointId() + 
+				SEPARATOR + this.getLatGPS() + SEPARATOR + this.getLonGPS() + SEPARATOR + this.getDistanceToShapePoint() + 
+				SEPARATOR + this.getGps_datetime() + SEPARATOR + this.getStopID() + SEPARATOR + this.getTripProblem() + 
+				SEPARATOR + this.getBusCode() + this.getAlertData().getDataString() + this.getJamData().getDataString();
+				//+ SEPARATOR + this.getHeadway() + SEPARATOR + this.isBusBunching() + SEPARATOR + this.getNextBusCode();
 	}
 }

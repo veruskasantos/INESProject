@@ -2,6 +2,9 @@ package BULMADependences;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+
+import scala.Tuple2;
 
 public class JamData extends WazeData {
 
@@ -21,7 +24,7 @@ public class JamData extends WazeData {
 		this.jamDelay = Integer.valueOf(delay);
 		this.jamLength = Integer.valueOf(length);
 		this.jamLevel = Integer.valueOf(level);
-		this.jamCoordinates = new ArrayList<String>(Arrays.asList(lineCoordinates.replace("[", "").replaceAll("},{", "};{").split(";"))); //todo [{"x":-34.906513,"y":-8.139684},{"x":-34.905742,"y":-8.139735},{"x":-34.905688,"y":-8.139741},{"x":-34.904807,"y":-8.13983}]
+		this.jamCoordinates = new ArrayList<String>(Arrays.asList(lineCoordinates.replace("[", "").replaceAll("},{", "};{").split(";"))); // [{"x":-34.906513,"y":-8.139684},{"x":-34.905742,"y":-8.139735},{"x":-34.905688,"y":-8.139741},{"x":-34.904807,"y":-8.13983}]
 		this.jamSeverity = Integer.valueOf(severity);
 		this.jamSpeedKM = Double.valueOf(speedKMH);
 		this.jamBlockDesc = blockDescription;
@@ -34,6 +37,17 @@ public class JamData extends WazeData {
 		this.jamExpirationDateTime = getDateTimeFromMillis(expirationDateTime);
 		this.jamExpirationTime = jamUpdateDateTime.split(" ")[1];
 		this.jamExpirationDate = jamUpdateDateTime.split(" ")[0];
+	}
+	
+	public List<Tuple2<Double, Double>> getJamLatLon() {
+		List<Tuple2<Double, Double>> outputLatLonList = new ArrayList<Tuple2<Double,Double>>();
+		
+		for (String coordinates : this.jamCoordinates) {
+			List<Double> latLon = getLatLon(coordinates);
+			Tuple2<Double,Double> latLonTuple = new Tuple2<Double, Double>(latLon.get(0), latLon.get(1));
+			outputLatLonList.add(latLonTuple);
+		}
+		return outputLatLonList;
 	}
 	
 	public String getJamID() {
@@ -172,6 +186,12 @@ public class JamData extends WazeData {
 		this.distanceToClosestShapePoint = distanceToClosestShapePoint;
 	}
 
+	public String getDataString() {
+		return jamUpdateDate + SEPARATOR + jamExpirationDateTime + SEPARATOR + jamBlockType + SEPARATOR + 
+				jamCoordinates + SEPARATOR + jamDelay + SEPARATOR + jamLength + SEPARATOR + jamLevel + SEPARATOR + 
+				jamSeverity + SEPARATOR + jamSpeedKM + SEPARATOR + distanceToClosestShapePoint;
+	}
+	
 	@Override
 	public String toString() {
 		return "JamData [jamUpdateDate=" + jamUpdateDate + ", jamExpirationDateTime=" + jamExpirationDateTime

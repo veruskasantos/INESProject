@@ -220,6 +220,14 @@ public class AlertData extends WazeData {
 		this.distanceToClosestShapePoint = distanceToClosestShapePoint;
 	}
 
+	public String getDataString() {
+		return  alertDate + SEPARATOR + alertSubtype + SEPARATOR + alertType + SEPARATOR + alertRoadType + SEPARATOR + 
+				alertConfidence + SEPARATOR + alertNComments + SEPARATOR + alertNImages + SEPARATOR + alertNThumbsUp + 
+				SEPARATOR + alertReliability + SEPARATOR + alertReportMood + SEPARATOR + alertReportRating + SEPARATOR +
+				alertSpeed + SEPARATOR + alertLatitude + SEPARATOR + alertLongitude + SEPARATOR + distanceToClosestShapePoint +
+				SEPARATOR + alertIsJamUnifiedAlert + SEPARATOR + alertInScale + SEPARATOR + alertLocation;
+	}
+	
 	@Override
 	public String toString() {
 		return "AlertData [alertDate=" + alertDate + ", alertSubtype=" + alertSubtype + ", alertType=" + alertType
