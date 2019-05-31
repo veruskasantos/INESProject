@@ -308,12 +308,11 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 	}
 
 	public String getTimestampField() {
-		String gps_date_time = this.outputString.split(",")[13];
 		String timestamp;
-		if (gps_date_time.equals("-")) {
+		if (this.gps_datetime.equals("-")) {
 			timestamp = "0";
 		} else {
-			timestamp = gps_date_time.split(" ")[1];
+			timestamp = this.gps_datetime.split(" ")[1];
 		}
 		return timestamp.replaceAll(":", "");
 	}
@@ -344,13 +343,13 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 	}
 	
 	public String getLabeledIntegratedDataString() {
-		return getIntegratedOutputString() + SEPARATOR + this.headway + SEPARATOR + this.busBunching + SEPARATOR +
-				this.nextBusCode;
+		return getIntegratedOutputString() + SEPARATOR + this.getHeadway() + SEPARATOR + this.isBusBunching() + 
+				SEPARATOR + this.getNextBusCode();
 	}
 	
 	public String getIntegratedOutputString() {
 		// Sometimes there are no jam or alert for the gps
-		String alertDataString = "-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-";
+		String alertDataString = "-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-";
 		if (alertData != null) {
 			alertDataString = alertData.getDataString();
 		}
@@ -367,6 +366,5 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 				SEPARATOR + this.getDistanceToShapePoint() + SEPARATOR + this.getGps_datetime() + SEPARATOR + 
 				this.getStopID() + SEPARATOR + this.getTripProblem() + SEPARATOR + alertDataString + SEPARATOR +
 				jamDataString;
-				//+ SEPARATOR + this.getHeadway() + SEPARATOR + this.isBusBunching() + SEPARATOR + this.getNextBusCode();
 	}
 }

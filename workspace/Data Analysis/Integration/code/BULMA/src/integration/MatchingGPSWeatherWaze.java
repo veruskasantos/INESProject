@@ -299,7 +299,7 @@ public class MatchingGPSWeatherWaze {
 			public Tuple2<String, Object> call(String alertsString) throws Exception {
 				String[] splittedEntry = alertsString.split(SEPARATOR_WAZE); //to deal with comma inside fields
 				
-				String roadType = null;
+				String roadType = "-";
 				try {
 					roadType = splittedEntry[26];
 				} catch (ArrayIndexOutOfBoundsException e) {
@@ -390,21 +390,22 @@ public class MatchingGPSWeatherWaze {
 		JavaPairRDD<String, Object> rddJamsData = jamsString.mapToPair(new PairFunction<String, String, Object>() {
 
 			public Tuple2<String, Object> call(String string) throws Exception {
-				String jamString = string.replace(",,", ",null,"); //to fix empty fields in the middle
+				String jamString = string.replaceAll(",,", ",-,"); //to fix empty fields in the middle
 				String[] splittedEntry = jamString.split(SEPARATOR_WAZE);
 				
-				String blockDescription = null;
+				String blockDescription = "-";
 				try {
 					blockDescription = splittedEntry[20];
 				} catch (ArrayIndexOutOfBoundsException e) {
 					//block description empty
 				}
 				
-				String blockExpiration = null;
+				String blockExpiration = "-";
 				try {
-					blockDescription = splittedEntry[21];
+					blockExpiration = splittedEntry[21];
 				} catch (ArrayIndexOutOfBoundsException e) {
 					//block expiration empty
+					System.out.println(blockExpiration);
 				}
 				
 				JamData jams = new JamData(splittedEntry[0], splittedEntry[3], splittedEntry[6], splittedEntry[7],

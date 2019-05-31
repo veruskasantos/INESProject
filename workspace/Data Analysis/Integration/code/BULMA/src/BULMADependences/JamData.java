@@ -28,37 +28,52 @@ public class JamData extends WazeData {
 		this.jamSeverity = Integer.valueOf(severity);
 		this.jamSpeedKM = Double.valueOf(speedKMH);
 		this.jamBlockDesc = blockDescription;
-		this.jamBlockType = blockType;
+		
+		if (blockType != null && blockType != "NONE" && !blockType.equals("-") && !blockType.isEmpty()) { 
+			this.jamBlockType = blockType;
+		} else {
+			this.jamBlockType = "-";
+		}
 		
 		this.jamUpdateDateTime = getDateTimeFromMillis(updateDateTime);
 		this.jamUpdateTime = jamUpdateDateTime.split(" ")[1];
 		this.jamUpdateDate = jamUpdateDateTime.split(" ")[0];
 		
-		if (expirationDateTime != null) { 
+		if (expirationDateTime != null && expirationDateTime != "NONE" && !expirationDateTime.equals("-") && !expirationDateTime.isEmpty()) { 
 			this.jamExpirationDateTime = getDateTimeFromMillis(expirationDateTime);
 			this.jamExpirationTime = jamUpdateDateTime.split(" ")[1];
 			this.jamExpirationDate = jamUpdateDateTime.split(" ")[0];
+		} else {
+			this.jamExpirationDateTime = "-";
 		}
 	}
 	
 	//jamUpdateDate,jamExpirationDateTime,jamBlockType,jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,jamDistanceToClosestShapePoint
 	public JamData(String updateDateTime, String expirationDateTime, String blockType, String delay, String length, 
-			String level, String severity, String speedKMH,  String distanceToClosestShapePoint) {
+			String level, String severity, String speedKMH, String distanceToClosestShapePoint) {
 		
 		this.jamDelay = Integer.valueOf(delay);
 		this.jamLength = Integer.valueOf(length);
 		this.jamLevel = Integer.valueOf(level);
 		this.jamSeverity = Integer.valueOf(severity);
 		this.jamSpeedKM = Double.valueOf(speedKMH);
-		this.jamBlockType = blockType;
+
+		if (blockType != null && blockType != "NONE" && !blockType.equals("-") && !blockType.isEmpty()) { 
+			this.jamBlockType = blockType;
+		} else {
+			this.jamBlockType = "-";
+		}
+		
 		this.jamUpdateDateTime = updateDateTime;
 		this.jamUpdateTime = jamUpdateDateTime.split(" ")[1];
 		this.jamUpdateDate = jamUpdateDateTime.split(" ")[0];
 		
-		if (expirationDateTime != null) { 
-			this.jamExpirationDateTime = getDateTimeFromMillis(expirationDateTime);
+		if (expirationDateTime != null && !expirationDateTime.equals("-") && !expirationDateTime.isEmpty()) { 
+			this.jamExpirationDateTime = expirationDateTime;
 			this.jamExpirationTime = jamUpdateDateTime.split(" ")[1];
 			this.jamExpirationDate = jamUpdateDateTime.split(" ")[0];
+		} else {
+			this.jamExpirationDateTime = "-";
 		}
 		this.distanceToClosestShapePoint = Double.valueOf(distanceToClosestShapePoint);
 		

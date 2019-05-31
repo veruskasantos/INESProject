@@ -13,7 +13,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.collections.IteratorUtils;
@@ -41,7 +40,6 @@ public class HeadwayLabeling {
 
 	//TODO change the index to variable names
 	private static final String SEPARATOR = ",";
-	private static final String SEPARATOR_EXPRESSION = ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)";
 	private static final String SLASH = "/";
 	private static final int BB_THRESHOLD = 5; // headway = 5 is considered bb
 	private static final String OUTPUT_HEADER = "route,tripNum,shapeId,routeFrequency,shapeSequence,shapeLat,shapeLon,distanceTraveledShape,"
@@ -193,18 +191,28 @@ public class HeadwayLabeling {
 		JavaPairRDD<String, Iterable<OutputString>> rddIntegratedDataGrouped = busteOutputString
 				.mapToPair(new PairFunction<String, String, OutputString>() {
 
-					public Tuple2<String, OutputString> call(String bulmaOutputString) throws Exception {
-						StringTokenizer st = new StringTokenizer(bulmaOutputString, SEPARATOR_EXPRESSION);
+					public Tuple2<String, OutputString> call(String string) throws Exception {
+						String bulmaOutputString = string.replaceAll(",,", ",-,");
+						String[] stringSplitted = bulmaOutputString.split(SEPARATOR);
 						
-						OutputString integratedData = new OutputString(st.nextToken(), st.nextToken(),
-								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(),
-								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(),
-								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), new AlertData(st.nextToken(), 
-								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(),
-								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), 
-								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), "aux"), new JamData(st.nextToken(), 
-								st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), st.nextToken(), 
-								st.nextToken(), st.nextToken()));
+						AlertData alert = null;
+						if (!stringSplitted[16].equals("-")) {
+							alert = new AlertData(stringSplitted[16], stringSplitted[17], stringSplitted[18], stringSplitted[19], stringSplitted[20],
+									stringSplitted[21], stringSplitted[22], stringSplitted[23], stringSplitted[24], stringSplitted[25],
+									stringSplitted[26], stringSplitted[27], stringSplitted[28], stringSplitted[29], stringSplitted[30],
+									stringSplitted[31], stringSplitted[32], "aux");
+						}
+						
+						JamData jam = null;
+						if (!stringSplitted[33].equals("-")) {
+							jam = new JamData(stringSplitted[33], stringSplitted[34], stringSplitted[35], stringSplitted[36], stringSplitted[37], 
+									stringSplitted[38], stringSplitted[39], stringSplitted[40], stringSplitted[41]);
+						}
+						
+						OutputString integratedData = new OutputString(stringSplitted[0], stringSplitted[1], stringSplitted[2],
+								stringSplitted[3], stringSplitted[4], stringSplitted[5], stringSplitted[6], stringSplitted[7],
+								stringSplitted[8], stringSplitted[9], stringSplitted[10], stringSplitted[11], stringSplitted[12],
+								stringSplitted[13], stringSplitted[14], stringSplitted[15], alert, jam);
 
 						String stopID = integratedData.getStopID();
 						String routeStopIDKey = integratedData.getRoute() + ":" + stopID;
@@ -257,8 +265,6 @@ public class HeadwayLabeling {
 					for (String arrivalTime : routeStopID_arrivalTimes._2) {
 						arrivalTimesSet.add(arrivalTime);
 					}
-					//System.out.println("before: " +  ((Collection<?>)routeStopID_arrivalTimes._2).size()
-					//		+ " after: " + arrivalTimesSet.size());
 					List<String> arrivalTimesList =  new ArrayList<String>(arrivalTimesSet);
 					Collections.sort(arrivalTimesList);
 					
@@ -361,6 +367,7 @@ public class HeadwayLabeling {
 									+ secondBusTimeSplit[2]);
 
 							HashMap<String, Long> arrivalTimesHeadwayMap = scheduledHeadwaysMap.get(routeStopID);
+							System.out.println("routeStopID: " + routeStopID);
 							for (Entry<String, Long> arrivalTimesHeadway : arrivalTimesHeadwayMap.entrySet()) {
 								String[] arrivalTimes = arrivalTimesHeadway.getKey().split("_");
 								Long headway = arrivalTimesHeadway.getValue();
@@ -396,40 +403,6 @@ public class HeadwayLabeling {
 						return labeledIntegratedData.iterator();
 					}
 				});
-		
-		// route, trip_number/no_shape_code, shape_id/-, route_frequency/-,
-		// shape_sequence/-, shape_lat/-, shape_lon/-,
-		// distance_traveled, bus_code, gps_id, gps_lat, gps_lon,
-		// distance_to_shape_point/-, gps_timestamp, stop_id, trip_problem_code,
-		// headway, bus_bunching, next_bus_code
-
-//		JavaRDD<String> rddOutput = rddHeadwayLabeling
-//				.flatMap(new FlatMapFunction<Tuple2<String, List<OutputString>>, String>() {
-//
-//					@Override
-//					public Iterator<String> call(Tuple2<String, List<OutputString>> routeStopID_rddHeadway)
-//							throws Exception {
-//
-//						List<String> listOutput = new ArrayList<>();
-//						for (OutputString line : routeStopID_rddHeadway._2) {
-//
-//							String newOutput = line.getRoute() + SEPARATOR + line.getTripNum() + SEPARATOR
-//									+ line.getShapeId() + SEPARATOR + line.getRouteFrequency() + SEPARATOR
-//									+ line.getShapeSequence() + SEPARATOR + line.getLatShape() + SEPARATOR
-//									+ line.getLonShape() + SEPARATOR + line.getDistance() + SEPARATOR
-//									+ line.getGpsPointId() + SEPARATOR + line.getLatGPS() + SEPARATOR 
-//									+ line.getLonGPS() + SEPARATOR + line.getDistanceToShapePoint() 
-//									+ SEPARATOR + line.getGps_datetime() + SEPARATOR + line.getStopID() 
-//									+ SEPARATOR + line.getTripProblem() + SEPARATOR + line.getBusCode() 
-//									+ SEPARATOR + line.getHeadway() + SEPARATOR + line.isBusBunching() 
-//									+ SEPARATOR + line.getNextBusCode();
-//
-//							listOutput.add(line.getLabeledIntegratedDataString());
-//						}
-//
-//						return listOutput.iterator();
-//					}
-//				});
 
 		return rddLabeledIntegratedOutput;
 	}

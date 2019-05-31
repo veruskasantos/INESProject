@@ -71,7 +71,6 @@ public class AlertData extends WazeData {
 		this.distanceToClosestShapePoint = Double.valueOf(distanceToClosestShapePoint);
 	}
 	
-	
 	public List<Double> getAlertLocation() {
 		return alertLocation;
 	}

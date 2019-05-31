@@ -28,7 +28,7 @@ public class WazeData implements Serializable{
 	// Creating Date from millisecond
 	public String getDateTimeFromMillis(String timeMillis) {
 		Calendar calendar = Calendar.getInstance();
-		calendar.setTimeInMillis(Long.valueOf(timeMillis));
+		calendar.setTimeInMillis(Double.valueOf(timeMillis).longValue());
 		
 		DateFormat df = new SimpleDateFormat("Y-MM-dd HH:mm:ss");
 		String timeDate = df.format(calendar.getTime());
