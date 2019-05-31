@@ -80,6 +80,7 @@ public class MergeGTFSFiles {
 				if (route == null) {
 					route = "-";
 				}
+				
 				String lat = data[2];
 				String lng = data[3];
 				String pointSequence = data[4];
@@ -343,8 +344,7 @@ public class MergeGTFSFiles {
 				String routeCode = mapRouteIdRouteCode.get(routeId);
 				if (routeCode == null) {
 					routeCode = "-";
-				} 
-				
+				}
 				ShapePoint closestPoint = getClosestShapePoint(new ShapePoint(null, lat, lng , null, null), mapShapeLines.get(shapeId));
 				
 				printWriter.print(arrivalTime + FILE_SEPARATOR);

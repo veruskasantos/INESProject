@@ -76,7 +76,7 @@ public class MatchingGPSWeatherWaze {
 
 		context.stop();
 		context.close();
-		System.out.println("Execution time: " + TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - initialTime) + " min");
+		System.out.println("MatchingGPS2W - Execution time: " + TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - initialTime) + " min");
 	}
 	
 	private static void generateOutputFilesHDFS(JavaSparkContext context, String matchingGSSOutputPath,

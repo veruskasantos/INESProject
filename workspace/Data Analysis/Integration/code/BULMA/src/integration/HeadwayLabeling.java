@@ -74,7 +74,7 @@ public class HeadwayLabeling {
 
 		context.stop();
 		context.close();
-		System.out.println("Execution time: " + TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - initialTime) + " min");
+		System.out.println("Headway Labeling - Execution time: " + TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - initialTime) + " min");
 	}
 
 	private static void generateOutputFilesHDFS(JavaSparkContext context, String pathBusteOutput, String stopTimesShapesPath,
@@ -99,10 +99,8 @@ public class HeadwayLabeling {
 				
 				while (iterator.hasNext()) {
 					line = iterator.next();
-					String timestamp = line.split(SEPARATOR)[13];
 					
-					//TODO maybe there is no more this line
-					if (!line.isEmpty() && !timestamp.equals("-")) { //skip empty line and line/shape without gps (the bus did not go to that stop)
+					if (!line.isEmpty()) {
 						output.add(line);
 					}
 				}
@@ -367,7 +365,6 @@ public class HeadwayLabeling {
 									+ secondBusTimeSplit[2]);
 
 							HashMap<String, Long> arrivalTimesHeadwayMap = scheduledHeadwaysMap.get(routeStopID);
-							System.out.println("routeStopID: " + routeStopID);
 							for (Entry<String, Long> arrivalTimesHeadway : arrivalTimesHeadwayMap.entrySet()) {
 								String[] arrivalTimes = arrivalTimesHeadway.getKey().split("_");
 								Long headway = arrivalTimesHeadway.getValue();
