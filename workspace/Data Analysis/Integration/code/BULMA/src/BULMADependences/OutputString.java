@@ -347,6 +347,18 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 				SEPARATOR + this.getNextBusCode();
 	}
 	
+	public String getLabeledIntegratedDataString(boolean checkMissingValues) {
+		String oldOutputString =  getIntegratedOutputString() + SEPARATOR + this.getHeadway() + SEPARATOR + this.isBusBunching() + 
+				SEPARATOR + this.getNextBusCode();
+		
+		String newOutputString = "";
+		if (checkMissingValues) {
+			newOutputString = oldOutputString.replaceAll(",-,", ",,").replaceAll(",-,", ",,"); //replace "-" by "" because pandas dataframe reads as object columns with multiple types
+		}
+		
+		return newOutputString ;
+	}
+	
 	public String getIntegratedOutputString() {
 		// Sometimes there are no jam or alert for the gps
 		String alertDataString = "-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-";

@@ -394,7 +394,7 @@ public class HeadwayLabeling {
 							currentBusteOutput.setNextBusCode(closestNextBus.getBusCode());
 							currentBusteOutput.setBusBunching(busBunching);
 							
-							labeledIntegratedData.add(currentBusteOutput.getLabeledIntegratedDataString());
+							labeledIntegratedData.add(currentBusteOutput.getLabeledIntegratedDataString(true)); //true to replace "-" by ""
 						}
 
 						return labeledIntegratedData.iterator();

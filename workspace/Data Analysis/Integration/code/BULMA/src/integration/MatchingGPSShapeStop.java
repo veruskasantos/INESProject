@@ -63,13 +63,12 @@ import scala.Tuple2;
  * At least, matching each stop with shape point and find gps data for it. The output is filtered by stop.
  *
  * @input GPS: bus.code, latitude, longitude, timestamp, line.code, gps.id
- * 		  GTFS: shapes.txt (preprocessed with route)
+ * 		  GTFS: shapes.csv (preprocessed with route)
  *
  * @return route, trip_number/no_shape_code, shape_id/-, route_frequency/-, shape_sequence/-, shape_lat/-, shape_lon/-, 
  *		distance_traveled, bus_code, gps_id, gps_lat, gps_lon, distance_to_shape_point/-, gps_timestamp,  stop_id, trip_problem_code
  */
 
-//TODO for BB, return less attributes
 
 public class MatchingGPSShapeStop {
 
