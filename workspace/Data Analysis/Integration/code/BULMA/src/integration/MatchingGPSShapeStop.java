@@ -1293,9 +1293,14 @@ public class MatchingGPSShapeStop {
 
 					public Tuple2<String, OutputString> call(String stringOutput) throws Exception {
 						String[] splittedEntry = stringOutput.split(FILE_SEPARATOR);
-						OutputString str = new OutputString(stringOutput);
 						
-						return new Tuple2<String, OutputString>(splittedEntry[8], str);
+						OutputString integratedData = new OutputString(splittedEntry[0], splittedEntry[1], splittedEntry[2],
+								splittedEntry[3], splittedEntry[4], splittedEntry[5], splittedEntry[6], splittedEntry[7],
+								splittedEntry[8], splittedEntry[9], splittedEntry[10], splittedEntry[11], splittedEntry[12],
+								splittedEntry[13], splittedEntry[14], splittedEntry[15]);
+						integratedData.setOutputString(stringOutput);
+						
+						return new Tuple2<String, OutputString>(splittedEntry[8], integratedData);
 					}
 				}).groupByKey();
 		

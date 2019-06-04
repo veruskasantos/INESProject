@@ -59,7 +59,12 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 		this.lonShape = Double.valueOf(lonShape);
 		this.gpsPointId = gpsPointId;
 		this.busCode = busCode;
-		this.timestamp = timestamp.split(" ")[1];
+		this.timestamp = timestamp;
+		
+		if (timestamp.split(" ").length > 1) {
+			this.timestamp = timestamp.split(" ")[1];
+		}
+		
 		this.latGPS = latGPS;
 		this.lonGPS = lonGPS;
 		this.distanceTraveled = distanceTraveled;
