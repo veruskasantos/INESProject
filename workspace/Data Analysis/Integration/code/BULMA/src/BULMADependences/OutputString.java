@@ -77,7 +77,8 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 //	Constructor of integrated data for headway labeled
 	public OutputString(String route, String tripNum, String shapeId, String routeFrequency, String shapeSequence, String latShape,
 			String lonShape, String distanceTraveled, String busCode, String gpsPointId, String latGPS, String lonGPS, String
-			distanceToShapePoint, String timestamp, String stopID, String tripProblem, AlertData alertData, JamData jamData) {
+			distanceToShapePoint, String timestamp, String stopID, String tripProblem, String precipitation, String precipitationTime,
+			AlertData alertData, JamData jamData) {
 		
 		this.tripNum = tripNum;
 		this.route = route;
@@ -93,6 +94,8 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 		this.lonGPS = lonGPS;
 		this.distanceTraveled = distanceTraveled;
 		this.tripProblem = tripProblem;
+		this.precipitation = Double.valueOf(precipitation);
+		this.precipitationTime = precipitationTime;
 		this.gps_datetime = timestamp; // date and time
 		this.stopID = stopID;
 		this.distanceToShapePoint = distanceToShapePoint;
@@ -352,9 +355,17 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 				SEPARATOR + this.getNextBusCode();
 	}
 	
+	private String getHourGPS() {
+		String hour = "";
+		if (this.timestamp != "-") {
+			hour = this.timestamp.split(":")[0];
+		}
+		return hour;
+	}
+	
 	public String getLabeledIntegratedDataString(boolean checkMissingValues) {
 		String oldOutputString =  getIntegratedOutputString() + SEPARATOR + this.getHeadway() + SEPARATOR + this.isBusBunching() + 
-				SEPARATOR + this.getNextBusCode();
+				SEPARATOR + this.getNextBusCode() + SEPARATOR + getHourGPS();
 		
 		String newOutputString = "";
 		if (checkMissingValues) {
@@ -381,7 +392,8 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 				SEPARATOR + this.getLonShape() + SEPARATOR + this.getDistance() + SEPARATOR + this.getBusCode() + 
 				SEPARATOR + this.getGpsPointId() + SEPARATOR + this.getLatGPS() + SEPARATOR + this.getLonGPS() + 
 				SEPARATOR + this.getDistanceToShapePoint() + SEPARATOR + this.getGps_datetime() + SEPARATOR + 
-				this.getStopID() + SEPARATOR + this.getTripProblem() + SEPARATOR + alertDataString + SEPARATOR +
+				this.getStopID() + SEPARATOR + this.getTripProblem() + SEPARATOR + this.getPrecipitation() + SEPARATOR +
+				this.getPrecipitationTime() + SEPARATOR + alertDataString + SEPARATOR +
 				jamDataString;
 	}
 }

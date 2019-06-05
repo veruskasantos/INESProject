@@ -43,10 +43,10 @@ public class HeadwayLabeling {
 	private static final String SLASH = "/";
 	private static final int BB_THRESHOLD = 5; // headway = 5 is considered bb
 	private static final String OUTPUT_HEADER = "route,tripNum,shapeId,routeFrequency,shapeSequence,shapeLat,shapeLon,distanceTraveledShape,"
-			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,problem,alertDateTime,alertSubtype,alertType,alertRoadType,"
-			+ "alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,alertReportMood,alertReportRating,alertSpeed,alertLatitude,"
+			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,problem,precipitation,precipitationTime,alertDateTime,alertSubtype,alertType,"
+			+ "alertRoadType,alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,alertReportMood,alertReportRating,alertSpeed,alertLatitude,"
 			+ "alertLongitude,alertDistanceToClosestShapePoint,alertIsJamUnifiedAlert,alertInScale,jamUpdateDateTime,jamExpirationDateTime,jamBlockType,"
-			+ "jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,jamDistanceToClosestShapePoint,headway,busBunching,nextBusCode";
+			+ "jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,jamDistanceToClosestShapePoint,headway,busBunching,nextBusCode,GPShour";
 
 	private static HashMap<String, HashMap<String, Long>> scheduledHeadwaysMap = new HashMap<String, HashMap<String, Long>>();
 
@@ -195,22 +195,23 @@ public class HeadwayLabeling {
 						
 						AlertData alert = null;
 						if (!stringSplitted[16].equals("-")) {
-							alert = new AlertData(stringSplitted[16], stringSplitted[17], stringSplitted[18], stringSplitted[19], stringSplitted[20],
-									stringSplitted[21], stringSplitted[22], stringSplitted[23], stringSplitted[24], stringSplitted[25],
-									stringSplitted[26], stringSplitted[27], stringSplitted[28], stringSplitted[29], stringSplitted[30],
-									stringSplitted[31], stringSplitted[32], "aux");
+							alert = new AlertData(stringSplitted[18], stringSplitted[19], stringSplitted[20], stringSplitted[21], stringSplitted[22],
+									stringSplitted[23], stringSplitted[24], stringSplitted[25], stringSplitted[26], stringSplitted[27],
+									stringSplitted[28], stringSplitted[29], stringSplitted[30], stringSplitted[31], stringSplitted[32],
+									stringSplitted[33], stringSplitted[34], "aux");
 						}
 						
 						JamData jam = null;
-						if (!stringSplitted[33].equals("-")) {
-							jam = new JamData(stringSplitted[33], stringSplitted[34], stringSplitted[35], stringSplitted[36], stringSplitted[37], 
-									stringSplitted[38], stringSplitted[39], stringSplitted[40], stringSplitted[41]);
+						if (!stringSplitted[35].equals("-")) {
+							jam = new JamData(stringSplitted[35], stringSplitted[36], stringSplitted[37], stringSplitted[38], stringSplitted[39], 
+									stringSplitted[40], stringSplitted[41], stringSplitted[42], stringSplitted[43]);
 						}
 						
 						OutputString integratedData = new OutputString(stringSplitted[0], stringSplitted[1], stringSplitted[2],
 								stringSplitted[3], stringSplitted[4], stringSplitted[5], stringSplitted[6], stringSplitted[7],
 								stringSplitted[8], stringSplitted[9], stringSplitted[10], stringSplitted[11], stringSplitted[12],
-								stringSplitted[13], stringSplitted[14], stringSplitted[15], alert, jam);
+								stringSplitted[13], stringSplitted[14], stringSplitted[15], stringSplitted[16], stringSplitted[17],
+								alert, jam);
 
 						String stopID = integratedData.getStopID();
 						String routeStopIDKey = integratedData.getRoute() + ":" + stopID;
