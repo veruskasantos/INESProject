@@ -210,7 +210,7 @@ public class MatchingGPSWeatherWaze {
 					stationCoordinatesMap.put(stationCode, new Tuple2<String, String>(latitude, longitude));
 				}
 				
-				String stationTimeCode = stationCode + "_" + weatherData.getTime().substring(0, 2);
+				String stationTimeCode = stationCode + "_" + Integer.valueOf(weatherData.getTime().substring(0, 2));
 				if (!stationDataMap.containsKey(stationTimeCode)) {//map to search closest time
 					stationDataMap.put(stationTimeCode, new ArrayList());
 				}
@@ -262,12 +262,25 @@ public class MatchingGPSWeatherWaze {
 						}
 						
 						//finding closest time data from closest station
-						String stationGPSTimeCurrent = closestStation + "_" + timeGP3S.substring(0, 2);
+						int currentHour = Integer.valueOf(timeGP3S.substring(0, 2));
+						String stationGPSTimeCurrent = closestStation + "_" + currentHour;
 						
 						Long closestTime = Long.MAX_VALUE;
 						Tuple2<String, Double> closestTimePrecipitation = null;
+						
 						//Comparing just with the same hour, because possible border errors are at most one
-						for (Tuple2<String, Double> stationData : stationDataMap.get(stationGPSTimeCurrent)) {
+						List<Tuple2<String, Double>> listTimes = stationDataMap.get(stationGPSTimeCurrent);
+						
+						if (listTimes == null) { //when there is no data for current time, consider next time or before time
+							int otherTime = currentHour + 1;
+							if (otherTime == 24) {
+								otherTime = currentHour - 1;
+							}
+							String stationGPSNextTime = closestStation + "_" + otherTime;
+							listTimes = stationDataMap.get(stationGPSNextTime);
+						}
+						
+						for (Tuple2<String, Double> stationData : listTimes) {
 							String timeKey = stationData._1;
 							Double precipitation = stationData._2;
 							
