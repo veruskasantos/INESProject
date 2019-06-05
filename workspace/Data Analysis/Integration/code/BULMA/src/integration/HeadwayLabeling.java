@@ -194,7 +194,7 @@ public class HeadwayLabeling {
 						String[] stringSplitted = bulmaOutputString.split(SEPARATOR);
 						
 						AlertData alert = null;
-						if (!stringSplitted[16].equals("-")) {
+						if (!stringSplitted[18].equals("-")) {
 							alert = new AlertData(stringSplitted[18], stringSplitted[19], stringSplitted[20], stringSplitted[21], stringSplitted[22],
 									stringSplitted[23], stringSplitted[24], stringSplitted[25], stringSplitted[26], stringSplitted[27],
 									stringSplitted[28], stringSplitted[29], stringSplitted[30], stringSplitted[31], stringSplitted[32],
