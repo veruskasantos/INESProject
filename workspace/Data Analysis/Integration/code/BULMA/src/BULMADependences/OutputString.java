@@ -31,6 +31,7 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 	// Matching GPS - Shape - Stop - Weather
 	private Double precipitation;
 	private String precipitationTime;
+	private String precipitationDateTime;
 	
 	// Matching  GPS - Shape - Stop - Weather - Alert
 	private AlertData alertData;
@@ -95,7 +96,8 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 		this.distanceTraveled = distanceTraveled;
 		this.tripProblem = tripProblem;
 		this.precipitation = Double.valueOf(precipitation);
-		this.precipitationTime = precipitationTime;
+		this.precipitationTime = precipitationTime.split(" ")[1];
+		this.precipitationDateTime = precipitationTime;
 		this.gps_datetime = timestamp; // date and time
 		this.stopID = stopID;
 		this.distanceToShapePoint = distanceToShapePoint;
@@ -393,7 +395,15 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 				SEPARATOR + this.getGpsPointId() + SEPARATOR + this.getLatGPS() + SEPARATOR + this.getLonGPS() + 
 				SEPARATOR + this.getDistanceToShapePoint() + SEPARATOR + this.getGps_datetime() + SEPARATOR + 
 				this.getStopID() + SEPARATOR + this.getTripProblem() + SEPARATOR + this.getPrecipitation() + SEPARATOR +
-				this.getPrecipitationTime() + SEPARATOR + alertDataString + SEPARATOR +
+				this.getPrecipitationDateTime() + SEPARATOR + alertDataString + SEPARATOR +
 				jamDataString;
+	}
+
+	public String getPrecipitationDateTime() {
+		return precipitationDateTime;
+	}
+
+	public void setPrecipitationDateTime(String precipitationDateTime) {
+		this.precipitationDateTime = precipitationDateTime;
 	}
 }

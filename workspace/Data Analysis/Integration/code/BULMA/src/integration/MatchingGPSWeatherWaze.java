@@ -217,7 +217,7 @@ public class MatchingGPSWeatherWaze {
 				
 				//stationCode_time(0,2), list<time, precipitation>
 				stationDataMap.get(stationTimeCode).add(
-						new Tuple2<String, Double>(weatherData.getTime(), weatherData.getPrecipitation()));
+						new Tuple2<String, Double>(weatherData.getDateTime(), weatherData.getPrecipitation()));
 				
 				// hour
 				String timeKey = weatherData.getTime().substring(0, 2);
@@ -284,14 +284,15 @@ public class MatchingGPSWeatherWaze {
 							String timeKey = stationData._1;
 							Double precipitation = stationData._2;
 							
-							long currentDifferenceTime = Math.abs(GeoPoint.getTimeDifference(timeGP3S, timeKey)); //check the abs value
+							long currentDifferenceTime = Math.abs(GeoPoint.getTimeDifference(timeGP3S, timeKey.split(" ")[1])); //check the abs value
 							if (currentDifferenceTime < closestTime) {
 								closestTimePrecipitation = new Tuple2<String, Double>(timeKey, precipitation);
 							}
 						}
 						
 						matchingGP3S.setPrecipitation(closestTimePrecipitation._2);
-						matchingGP3S.setPrecipitationTime(closestTimePrecipitation._1);
+						matchingGP3S.setPrecipitationTime(closestTimePrecipitation._1.split(" ")[1]);
+						matchingGP3S.setPrecipitationDateTime(closestTimePrecipitation._1);
 						
 						String latLonKey = String.valueOf(matchingGP3S.getLatShape()).replace(" ",  "").substring(0, 4) + ":" + String.valueOf(matchingGP3S.getLonShape()).replace(" ",  "").substring(0, 5);
 

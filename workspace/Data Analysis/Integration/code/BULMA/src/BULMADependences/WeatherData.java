@@ -7,6 +7,7 @@ public class WeatherData implements Serializable{
 	private static final long serialVersionUID = 1L;
 	private String latitude;
 	private String longitude;
+	private String dateTime;
 	private String time;
 	private Double precipitation;
 	private String stationCode;
@@ -15,7 +16,8 @@ public class WeatherData implements Serializable{
 	public WeatherData(String stationCode, String latitude, String longitude, String dateTime, String precipitation) {
 		this.latitude = latitude.replace(",", ".");
 		this.longitude = longitude.replace(",", ".");
-		this.time = dateTime.split(" ")[1];
+		this.dateTime = dateTime.replace(".0", "");
+		this.time = this.dateTime.split(" ")[1];
 		this.precipitation = Double.valueOf(precipitation.replace(",", "."));
 		this.stationCode = stationCode;
 	}
@@ -63,5 +65,13 @@ public class WeatherData implements Serializable{
 	@Override
 	public String toString() {
 		return "Weather data: " + stationCode + ", " + time + ", " + precipitation;
+	}
+
+	public String getDateTime() {
+		return dateTime;
+	}
+
+	public void setDateTime(String dateTime) {
+		this.dateTime = dateTime;
 	}
 }
