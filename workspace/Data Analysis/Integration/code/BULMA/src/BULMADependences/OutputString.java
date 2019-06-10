@@ -41,6 +41,7 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 	
 	// Matching  GPS - Shape - Stop - Weather - Alert - Jam - Headway - Bus Bunching
 	private long headway;
+	private int headwayThreshold;
 	private String nextBusCode;
 	private boolean busBunching;
 	
@@ -265,6 +266,14 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 		this.headway = headway;
 	}
 
+	public int getHeadwayThreshold() {
+		return headwayThreshold;
+	}
+
+	public void setHeadwayThreshold(int headwayThreshold) {
+		this.headwayThreshold = headwayThreshold;
+	}
+
 	public boolean isBusBunching() {
 		return busBunching;
 	}
@@ -366,8 +375,9 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 	}
 	
 	public String getLabeledIntegratedDataString(boolean checkMissingValues) {
-		String oldOutputString =  getIntegratedOutputString() + SEPARATOR + this.getHeadway() + SEPARATOR + this.isBusBunching() + 
-				SEPARATOR + this.getNextBusCode() + SEPARATOR + getHourGPS();
+		String oldOutputString =  getIntegratedOutputString() + SEPARATOR + this.getHeadway() + SEPARATOR + 
+				this.getHeadwayThreshold() + SEPARATOR + this.isBusBunching() + SEPARATOR + 
+				this.getNextBusCode() + SEPARATOR + getHourGPS();
 		
 		String newOutputString = "";
 		if (checkMissingValues) {

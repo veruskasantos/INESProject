@@ -46,7 +46,7 @@ public class HeadwayLabeling {
 			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,problem,precipitation,precipitationTime,alertDateTime,alertSubtype,alertType,"
 			+ "alertRoadType,alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,alertReportMood,alertReportRating,alertSpeed,alertLatitude,"
 			+ "alertLongitude,alertDistanceToClosestShapePoint,alertIsJamUnifiedAlert,alertInScale,jamUpdateDateTime,jamExpirationDateTime,jamBlockType,"
-			+ "jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,jamDistanceToClosestShapePoint,headway,busBunching,nextBusCode,GPShour";
+			+ "jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,jamDistanceToClosestShapePoint,headway,headwayThreshold,busBunching,nextBusCode,GPShour";
 
 	private static HashMap<String, HashMap<String, Long>> scheduledHeadwaysMap = new HashMap<String, HashMap<String, Long>>();
 
@@ -74,7 +74,7 @@ public class HeadwayLabeling {
 
 		context.stop();
 		context.close();
-		System.out.println("Headway Labeling - Execution time: " + TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - initialTime) + " min");
+		System.out.println(city + " - Headway Labeling \nExecution time: " + TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - initialTime) + " min");
 	}
 
 	private static void generateOutputFilesHDFS(JavaSparkContext context, String pathBusteOutput, String stopTimesShapesPath,
@@ -382,16 +382,19 @@ public class HeadwayLabeling {
 							}
 							
 							boolean busBunching = true;
-							if (scheduledHeadway == null) {// if there is no data, consider a threshold
-								if (closestHeadway > BB_THRESHOLD) {
-									busBunching = false;
-								}
-							} else if (closestHeadway > (scheduledHeadway/4)) {
+							int headwayThreshold = BB_THRESHOLD; // if there is no data, consider a threshold
+							
+							if (scheduledHeadway != null) {
+								headwayThreshold = (int) (scheduledHeadway/4);
+							}
+							
+							if (closestHeadway > headwayThreshold) {
 								busBunching = false;
 							}
 							
 							//saving
 							currentBusteOutput.setHeadway(closestHeadway);
+							currentBusteOutput.setHeadwayThreshold(headwayThreshold);
 							currentBusteOutput.setNextBusCode(closestNextBus.getBusCode());
 							currentBusteOutput.setBusBunching(busBunching);
 							
