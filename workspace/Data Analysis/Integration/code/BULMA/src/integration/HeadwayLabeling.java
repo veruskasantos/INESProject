@@ -36,6 +36,24 @@ import BULMADependences.OutputString;
 import PointDependencies.GeoPoint;
 import scala.Tuple2;
 
+/**
+ * 
+ * THIRD CODE:
+ * Find the consecutive bus, calculating the headway and the distance to it.
+ * 
+ * @input route, trip_number/no_shape_code, shape_id/-, route_frequency/-, shape_sequence/-, shape_lat/-, shape_lon/-, 
+ *		distance_traveled, bus_code, gps_id, gps_lat, gps_lon, distance_to_shape_point/-, gps_timestamp,  stop_id, trip_problem_code,
+ *		<weather_data>, <waze_data>
+ *
+ * @output route, trip_number/no_shape_code, shape_id/-, route_frequency/-, shape_sequence/-, shape_lat/-, shape_lon/-, 
+ *		distance_traveled, bus_code, gps_id, gps_lat, gps_lon, distance_to_shape_point/-, gps_timestamp,  stop_id, trip_problem_code,
+ *		<weather_data>, <waze_data>, headway, headwayThreshold, busBunching, nextBusCode, GPShour
+ * 
+ * @author veruska
+ *
+ */
+
+//TODO 2 - add all the second bus INFOS and the DISTANCE
 public class HeadwayLabeling {
 
 	//TODO change the index to variable names
@@ -47,6 +65,54 @@ public class HeadwayLabeling {
 			+ "alertRoadType,alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,alertReportMood,alertReportRating,alertSpeed,alertLatitude,"
 			+ "alertLongitude,alertDistanceToClosestShapePoint,alertIsJamUnifiedAlert,alertInScale,jamUpdateDateTime,jamExpirationDateTime,jamBlockType,"
 			+ "jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,jamDistanceToClosestShapePoint,headway,headwayThreshold,busBunching,nextBusCode,GPShour";
+	
+	//input variables index
+	private static int wazePublicationTime = 18;
+	private static int wazeSubtype = 19;
+	private static int wazeType = 20;
+	private static int wazeRoadType = 21;
+	private static int wazeConfidence = 22;
+	private static int wazeNComments = 23;
+	private static int wazeNImages = 24;
+	private static int wazeNThumbsUp = 25;
+	private static int wazeReliability = 26;
+	private static int wazeReportMood = 27;
+	private static int wazeReportRating = 28;
+	private static int wazeSpeed = 29;
+	private static int wazeLatitude = 30;
+	private static int wazeLongitude = 31;
+	private static int wazeDistanceToClosShapePoint = 32;
+	private static int wazeIsJamUnifiedAlert = 33;
+	private static int wazeInScale = 34;
+
+	private static int jamUpdateDateTime = 35;
+	private static int jamExpirationDateTime = 36;
+	private static int jamBlockType = 37;
+	private static int jamDelay = 38;
+	private static int jamLength = 39;
+	private static int jamLevel = 40;
+	private static int jamSeverity = 41;
+	private static int jamSpeedKMH = 42;
+	private static int jamDistanceToClosShapePoint = 43;
+	
+	private static int gpsRoute = 0;
+	private static int gpsTripNum = 1;
+	private static int gpsShapeId = 2;
+	private static int gpsRouteFrequency = 3;
+	private static int gpsShapeSequence = 4;
+	private static int gpsLatShape = 5;
+	private static int gpsLonShape = 6;
+	private static int gpsDistanceTraveled = 7;
+	private static int gpsBusCode = 8;
+	private static int gpsPointId = 9;
+	private static int gpsLat = 10;
+	private static int gpsLon = 11;
+	private static int gpsDistanceToShapePoint = 12;
+	private static int gpsTimestamp = 13;
+	private static int gpsStopID = 14;
+	private static int gpsTripProblem = 15;
+	private static int gpsPrecipitation = 16;
+	private static int gpsPrecipitationTime = 17;
 
 	private static HashMap<String, HashMap<String, Long>> scheduledHeadwaysMap = new HashMap<String, HashMap<String, Long>>();
 
@@ -193,24 +259,28 @@ public class HeadwayLabeling {
 						String bulmaOutputString = string.replaceAll(",,", ",-,");
 						String[] stringSplitted = bulmaOutputString.split(SEPARATOR);
 						
+						
 						AlertData alert = null;
-						if (!stringSplitted[18].equals("-")) {
-							alert = new AlertData(stringSplitted[18], stringSplitted[19], stringSplitted[20], stringSplitted[21], stringSplitted[22],
-									stringSplitted[23], stringSplitted[24], stringSplitted[25], stringSplitted[26], stringSplitted[27],
-									stringSplitted[28], stringSplitted[29], stringSplitted[30], stringSplitted[31], stringSplitted[32],
-									stringSplitted[33], stringSplitted[34], "aux");
+						if (!stringSplitted[wazePublicationTime].equals("-")) {
+							alert = new AlertData(stringSplitted[wazePublicationTime], stringSplitted[wazeSubtype], stringSplitted[wazeType], 
+									stringSplitted[wazeRoadType], stringSplitted[wazeConfidence], stringSplitted[wazeNComments], stringSplitted[wazeNImages], 
+									stringSplitted[wazeNThumbsUp], stringSplitted[wazeReliability], stringSplitted[wazeReportMood], stringSplitted[wazeReportRating], 
+									stringSplitted[wazeSpeed], stringSplitted[wazeLatitude], stringSplitted[wazeLongitude], stringSplitted[wazeDistanceToClosShapePoint],
+									stringSplitted[wazeIsJamUnifiedAlert], stringSplitted[wazeInScale], "aux");
 						}
 						
 						JamData jam = null;
-						if (!stringSplitted[35].equals("-")) {
-							jam = new JamData(stringSplitted[35], stringSplitted[36], stringSplitted[37], stringSplitted[38], stringSplitted[39], 
-									stringSplitted[40], stringSplitted[41], stringSplitted[42], stringSplitted[43]);
+						if (!stringSplitted[jamUpdateDateTime].equals("-")) {
+							jam = new JamData(stringSplitted[jamUpdateDateTime], stringSplitted[jamExpirationDateTime], stringSplitted[jamBlockType], 
+									stringSplitted[jamDelay], stringSplitted[jamLength], stringSplitted[jamLevel], stringSplitted[jamSeverity], 
+									stringSplitted[jamSpeedKMH], stringSplitted[jamDistanceToClosShapePoint]);
 						}
 						
-						OutputString integratedData = new OutputString(stringSplitted[0], stringSplitted[1], stringSplitted[2],
-								stringSplitted[3], stringSplitted[4], stringSplitted[5], stringSplitted[6], stringSplitted[7],
-								stringSplitted[8], stringSplitted[9], stringSplitted[10], stringSplitted[11], stringSplitted[12],
-								stringSplitted[13], stringSplitted[14], stringSplitted[15], stringSplitted[16], stringSplitted[17],
+						OutputString integratedData = new OutputString(stringSplitted[gpsRoute], stringSplitted[gpsTripNum], stringSplitted[gpsShapeId],
+								stringSplitted[gpsRouteFrequency], stringSplitted[gpsShapeSequence], stringSplitted[gpsLatShape], stringSplitted[gpsLonShape], 
+								stringSplitted[gpsDistanceTraveled], stringSplitted[gpsBusCode], stringSplitted[gpsPointId], stringSplitted[gpsLat], 
+								stringSplitted[gpsLon], stringSplitted[gpsDistanceToShapePoint], stringSplitted[gpsTimestamp], stringSplitted[gpsStopID], 
+								stringSplitted[gpsTripProblem], stringSplitted[gpsPrecipitation], stringSplitted[gpsPrecipitationTime],
 								alert, jam);
 
 						String stopID = integratedData.getStopID();
