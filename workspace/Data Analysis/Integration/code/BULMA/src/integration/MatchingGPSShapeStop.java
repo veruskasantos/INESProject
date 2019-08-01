@@ -57,7 +57,7 @@ import PointDependencies.ShapePoint;
 import scala.Tuple2;
 
 /**
- * 
+ * FIRST CODE:
  * Matching GPS with Shape, i.e., identifying which shape the bus is running (some cities has multiple shapes for the same route).
  * Besides this, matching each gps point with the closest shape point, stop point and separate the trips.
  * At least, matching each stop with shape point and find gps data for it. The output is filtered by stop.

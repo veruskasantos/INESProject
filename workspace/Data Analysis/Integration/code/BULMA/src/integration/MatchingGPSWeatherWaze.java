@@ -37,12 +37,29 @@ import BULMADependences.WeatherData;
 import PointDependencies.GeoPoint;
 import scala.Tuple2;
 
+/**
+ * SECOND CODE:
+ * Matching GPS, Weather and Waze data.
+ * To match gps and weather data is considered the closest weather data, without threshold.
+ * To match gps and waze data is considered the closest waze data not exceeding 1km. 
+ * 
+ * @input route, trip_number/no_shape_code, shape_id/-, route_frequency/-, shape_sequence/-, shape_lat/-, shape_lon/-, 
+ *		distance_traveled, bus_code, gps_id, gps_lat, gps_lon, distance_to_shape_point/-, gps_timestamp,  stop_id, trip_problem_code
+ *
+ * @output route, trip_number/no_shape_code, shape_id/-, route_frequency/-, shape_sequence/-, shape_lat/-, shape_lon/-, 
+ *		distance_traveled, bus_code, gps_id, gps_lat, gps_lon, distance_to_shape_point/-, gps_timestamp,  stop_id, trip_problem_code,
+ *		<weather_data>, <waze_data>
+ * 
+ * @author veruska
+ *
+ */
 public class MatchingGPSWeatherWaze {
 
 	private static final String SEPARATOR = ",";
 	private static final String SEPARATOR_WEATHER = ";";
 	private static final String SEPARATOR_WAZE = ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)";
 	private static final String SLASH = "/";
+	//TODO 1 - take only CLOSEST waze data from the streets where buses pass
 	private static final Double ALERT_DISTANCE_THRESHOLD = 1000.0; //1 KM to consider the waze alert related to gps
 	private static Map<String, Tuple2<String, String>> stationCoordinatesMap;
 	private static Map<String, List<Tuple2<String, Double>>> stationDataMap;
@@ -51,6 +68,38 @@ public class MatchingGPSWeatherWaze {
 			+ "alertRoadType,alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,alertReportMood,alertReportRating,alertSpeed,alertLatitude,"
 			+ "alertLongitude,alertDistanceToClosestShapePoint,alertIsJamUnifiedAlert,alertInScale,jamUpdateDateTime,jamExpirationDateTime,jamBlockType,"
 			+ "jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,jamDistanceToClosestShapePoint";
+	
+	
+	//input variables index
+	private static int wazeId = 0;
+	private static int wazeConfidence = 3;
+	private static int wazeInScale = 6;
+	private static int wazeIsJamUnifiedAlert = 7;
+	private static int wazeLocation = 8;
+	private static int wazeNComments = 10;
+	private static int wazeNImages = 11;
+	private static int wazeNThumbsUp = 12;
+	private static int wazePublicationTime = 13;
+	private static int wazeReliability = 14;
+	private static int wazeReportDescription = 16;
+	private static int wazeReportMood = 17;
+	private static int wazeReportRating = 18;
+	private static int wazeSpeed = 20;
+	private static int wazeSubtype = 22;
+	private static int wazeType = 23;
+	private static int wazeRoadType = 26;
+	
+	private static int jamId = 0;
+	private static int jamDelay = 3;
+	private static int jamLength = 6;
+	private static int jamLevel = 7;
+	private static int jamLineCoordinates = 8;
+	private static int jamSeverity = 12;
+	private static int jamSpeedKMH = 14;
+	private static int jamUpdateDateTime = 18;
+	private static int jamBlockDescription = 20;
+	private static int jamExpirationDateTime = 21;
+	private static int jamBlockType = 23;
 	
 	public static void main(String[] args) throws IOException, URISyntaxException, ParseException {
 
@@ -315,15 +364,16 @@ public class MatchingGPSWeatherWaze {
 				
 				String roadType = "-";
 				try {
-					roadType = splittedEntry[26];
+					roadType = splittedEntry[wazeRoadType];
 				} catch (ArrayIndexOutOfBoundsException e) {
 					//road type empty
 				}
 				
-				AlertData alert = new AlertData(splittedEntry[0], splittedEntry[3], splittedEntry[6], splittedEntry[7],
-						splittedEntry[8], splittedEntry[10], splittedEntry[11], splittedEntry[12], 
-						splittedEntry[13], splittedEntry[14], splittedEntry[16], splittedEntry[17], splittedEntry[18], 
-						splittedEntry[20], splittedEntry[22], splittedEntry[23], roadType);
+				AlertData alert = new AlertData(splittedEntry[wazeId], splittedEntry[wazeConfidence], splittedEntry[wazeInScale], 
+						splittedEntry[wazeIsJamUnifiedAlert], splittedEntry[wazeLocation], splittedEntry[wazeNComments], splittedEntry[wazeNImages], 
+						splittedEntry[wazeNThumbsUp], splittedEntry[wazePublicationTime], splittedEntry[wazeReliability], splittedEntry[wazeReportDescription], 
+						splittedEntry[wazeReportMood], splittedEntry[wazeReportRating], splittedEntry[wazeSpeed], splittedEntry[wazeSubtype], splittedEntry[wazeType], 
+						roadType);
 
 				// lat:lon:data
 				String latLonKey = String.valueOf(alert.getAlertLatitude()).substring(0, 4) + ":" + String.valueOf(alert.getAlertLongitude()).substring(0, 5);
@@ -409,22 +459,22 @@ public class MatchingGPSWeatherWaze {
 				
 				String blockDescription = "-";
 				try {
-					blockDescription = splittedEntry[20];
+					blockDescription = splittedEntry[jamBlockDescription];
 				} catch (ArrayIndexOutOfBoundsException e) {
 					//block description empty
 				}
 				
 				String blockExpiration = "-";
 				try {
-					blockExpiration = splittedEntry[21];
+					blockExpiration = splittedEntry[jamExpirationDateTime];
 				} catch (ArrayIndexOutOfBoundsException e) {
 					//block expiration empty
 					System.out.println(blockExpiration);
 				}
 				
-				JamData jams = new JamData(splittedEntry[0], splittedEntry[3], splittedEntry[6], splittedEntry[7],
-						splittedEntry[8], splittedEntry[12], splittedEntry[14], splittedEntry[18], 
-						blockDescription, blockExpiration, splittedEntry[23]);
+				JamData jams = new JamData(splittedEntry[jamId], splittedEntry[jamDelay], splittedEntry[jamLength], splittedEntry[jamLevel],
+						splittedEntry[jamLineCoordinates], splittedEntry[jamSeverity], splittedEntry[jamSpeedKMH], splittedEntry[jamUpdateDateTime], 
+						blockDescription, blockExpiration, splittedEntry[jamBlockType]);
 				
 				//hour:date
 				String hourDateKey = jams.getJamUpdateTime().substring(0, 3) + stringDate;
