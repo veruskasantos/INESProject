@@ -6,7 +6,7 @@ public class AlertData extends WazeData {
 
 	private static final long serialVersionUID = 1L;
 	//Alerts attributes
-	private String alertID, alertDateTime, alertTime, alertDate, alertReportDescription, alertSubtype, alertType, alertRoadType;
+	private String alertID, alertDateTime, alertTime, alertDate, alertReportDescription, alertSubtype, alertType, alertRoadType, alertStreet;
 	private int alertConfidence, alertNComments, alertNImages, alertNThumbsUp, alertReliability, alertReportMood;
 	private double alertReportRating, alertSpeed, alertLatitude, alertLongitude, distanceToClosestShapePoint;
 	private boolean alertIsJamUnifiedAlert, alertInScale;
@@ -15,7 +15,7 @@ public class AlertData extends WazeData {
 	public AlertData(String id, String confidence, String inScale, String isJamUnifiedAlert, String location,
 			String nComments, String nImages, String nThumbsUp, String publicationTime, String reliability,
 			String reportDescription, String reportMood, String reportRating, String speed, String subtype, String type,
-			String roadType) {
+			String alertStreet, String roadType) {
 		
 		this.alertID = id;
 		this.alertConfidence = Integer.valueOf(confidence);
@@ -38,6 +38,7 @@ public class AlertData extends WazeData {
 		this.alertSubtype = subtype;
 		this.alertType = type;
 		this.alertRoadType = roadType;
+		this.alertStreet = alertStreet;
 	}
 	
 //	alertDate,alertSubtype,alertType,alertRoadType,alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,
@@ -47,8 +48,7 @@ public class AlertData extends WazeData {
 	//After integrated data: variables of interest
 	public AlertData(String publicationTime, String subtype, String type, String roadType, String confidence, String nComments,
 			String nImages, String nThumbsUp, String reliability, String reportMood, String reportRating, String speed, 
-			String latitude, String longitude, String distanceToClosestShapePoint, String isJamUnifiedAlert, String inScale,
-			String aux) {
+			String latitude, String longitude, String distanceToClosestShapePoint, String isJamUnifiedAlert, String inScale) {
 		
 		this.alertConfidence = Integer.valueOf(confidence);
 		this.alertInScale = Boolean.valueOf(inScale);
@@ -249,6 +249,14 @@ public class AlertData extends WazeData {
 
 	public void setDistanceToClosestShapePoint(double distanceToClosestShapePoint) {
 		this.distanceToClosestShapePoint = distanceToClosestShapePoint;
+	}
+
+	public String getAlertStreet() {
+		return alertStreet;
+	}
+
+	public void setAlertStreet(String alertStreet) {
+		this.alertStreet = alertStreet;
 	}
 
 	//alertDate,alertSubtype,alertType,alertRoadType,alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,alertReportMood,alertReportRating,alertSpeed,alertLatitude,alertLongitude,distanceToClosestShapePoint,alertIsJamUnifiedAlert,alertInScale

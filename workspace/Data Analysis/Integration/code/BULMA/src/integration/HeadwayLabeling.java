@@ -47,16 +47,15 @@ import scala.Tuple2;
  *
  * @output route, trip_number/no_shape_code, shape_id/-, route_frequency/-, shape_sequence/-, shape_lat/-, shape_lon/-, 
  *		distance_traveled, bus_code, gps_id, gps_lat, gps_lon, distance_to_shape_point/-, gps_timestamp,  stop_id, trip_problem_code,
- *		<weather_data>, <waze_data>, headway, headwayThreshold, busBunching, nextBusCode, GPShour
- * 
+ *		<weather_data>, <waze_data>, headway, headwayThreshold, busBunching, distance_between_buses, GPShour, <second_bus_data>
+ *  89 VARIABLES
+ *  
  * @author veruska
  *
  */
 
-//TODO 2 - add all the second bus INFOS and the DISTANCE
 public class HeadwayLabeling {
 
-	//TODO change the index to variable names
 	private static final String SEPARATOR = ",";
 	private static final String SLASH = "/";
 	private static final int BB_THRESHOLD = 5; // headway = 5 is considered bb
@@ -64,7 +63,12 @@ public class HeadwayLabeling {
 			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,problem,precipitation,precipitationTime,alertDateTime,alertSubtype,alertType,"
 			+ "alertRoadType,alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,alertReportMood,alertReportRating,alertSpeed,alertLatitude,"
 			+ "alertLongitude,alertDistanceToClosestShapePoint,alertIsJamUnifiedAlert,alertInScale,jamUpdateDateTime,jamExpirationDateTime,jamBlockType,"
-			+ "jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,jamDistanceToClosestShapePoint,headway,headwayThreshold,busBunching,nextBusCode,GPShour";
+			+ "jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,jamDistanceToClosestShapePoint,headway,headwayThreshold,busBunching,GPShour,"
+			+ "tripNumSB,shapeSequenceSB,shapeLatSB,shapeLonSB,distanceTraveledShapeSB,busCodeSB,gpsPointIdSB,gpsLatSB,gpsLonSB,distanceToShapePointSB,gps_datetimeSB,"
+			+ "stopPointIdSB,problemSB,precipitationSB,precipitationTimeSB,alertDateTimeSB,alertSubtypeSB,alertTypeSB,alertRoadTypeSB,alertConfidenceSB,alertNCommentsSB,"
+			+ "alertNImagesSB,alertNThumbsUpSB,alertReliabilitySB,alertReportMoodSB,alertReportRatingSB,alertSpeedSB,alertLatitudeSB,alertLongitudeSB,"
+			+ "alertDistanceToClosestShapePointSB,alertIsJamUnifiedAlertSB,alertInScaleSB,jamUpdateDateTimeSB,jamExpirationDateTimeSB,jamBlockTypeSB,jamDelaySB,jamLengthSB,"
+			+ "jamLevelSB,jamSeveritySB,jamSpeedKMSB,jamDistanceToClosestShapePointSB";
 	
 	//input variables index
 	private static int wazePublicationTime = 18;
@@ -266,7 +270,7 @@ public class HeadwayLabeling {
 									stringSplitted[wazeRoadType], stringSplitted[wazeConfidence], stringSplitted[wazeNComments], stringSplitted[wazeNImages], 
 									stringSplitted[wazeNThumbsUp], stringSplitted[wazeReliability], stringSplitted[wazeReportMood], stringSplitted[wazeReportRating], 
 									stringSplitted[wazeSpeed], stringSplitted[wazeLatitude], stringSplitted[wazeLongitude], stringSplitted[wazeDistanceToClosShapePoint],
-									stringSplitted[wazeIsJamUnifiedAlert], stringSplitted[wazeInScale], "aux");
+									stringSplitted[wazeIsJamUnifiedAlert], stringSplitted[wazeInScale]);
 						}
 						
 						JamData jam = null;
@@ -465,7 +469,7 @@ public class HeadwayLabeling {
 							//saving
 							currentBusteOutput.setHeadway(closestHeadway);
 							currentBusteOutput.setHeadwayThreshold(headwayThreshold);
-							currentBusteOutput.setNextBusCode(closestNextBus.getBusCode());
+							currentBusteOutput.setNextBus(closestNextBus);
 							currentBusteOutput.setBusBunching(busBunching);
 							
 							labeledIntegratedData.add(currentBusteOutput.getLabeledIntegratedDataString(true)); //true to replace "-" by ""

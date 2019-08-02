@@ -5,12 +5,18 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.json.JSONObject;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -46,19 +52,22 @@ public class MergeGTFSFiles {
 		String stops = GTFSPath + "stops.txt"; // lat_stop, lng_stop
 		String routes = GTFSPath + "routes_label.txt";
 		String shapes = GTFSPath + "shapes.csv";
-		String outputPath = args[2]  + city + "/stop_times_shapes1.txt";
-		
+
 //		Uncomment the lines below to generate Shape File
-//		readRoutesFile(routes);
-//		readTripFileGetRoute(trips);
-//		updateShapeFile(shapes, newFile);
+		System.out.println("Running - Creating new Shape File");
+		String shapeOutputPath = args[2]  + city + "/shapesSTREET.csv";
+		readRoutesFile(routes);
+		readTripFileGetRoute(trips, city);
+		updateShapeFile(shapes, shapeOutputPath);
 		
 //	    Uncomment the lines below to generate stops times file
-		readRoutesFile(routes);
-		readTripFile(trips, city);
-		readStopsFile(stops);
-		createShapePoints(shapes);
-		createNewFile(outputPath, stopTimes, city);
+//		System.out.println("Running - Creating new Stops Times File");
+//		String stopOutputPath = args[2]  + city + "/stop_times_shapes1.txt";
+//		readRoutesFile(routes);
+//		readTripFile(trips, city);
+//		readStopsFile(stops);
+//		createShapePoints(shapes);
+//		createNewFile(stopOutputPath, stopTimes, city);
 		
 		System.out.println("Done!");
 	}
@@ -152,6 +161,7 @@ public class MergeGTFSFiles {
 		return closestShapePoint;
 	}
 
+	// add route_id and street_name to shape file (TODO: update to run before)
 	private static void updateShapeFile(String shapes, String newFilePath) {
 		BufferedReader brShapes = null;
 		String lineShapes = "";
@@ -160,7 +170,8 @@ public class MergeGTFSFiles {
 			FileWriter output = new FileWriter(newFilePath);
 			PrintWriter printWriter = new PrintWriter(output);
 
-			printWriter.println("route_id" + FILE_SEPARATOR + brShapes.readLine().replace("\"", ""));
+			printWriter.println("route_id" + FILE_SEPARATOR + brShapes.readLine().replace("\"", "")
+					+ FILE_SEPARATOR + "street_name");
 			
 			while ((lineShapes = brShapes.readLine()) != null) {
 
@@ -168,6 +179,11 @@ public class MergeGTFSFiles {
 				String shapeId = data[0];
 				String routeId = mapShapeRouteId.get(shapeId);
 				String routeCode = null;
+				
+				double lat = Double.valueOf(data[1]);
+				double lng = Double.valueOf(data[2]);
+				String streetName = getStreetNameHERE(lat, lng);
+				
 				if (routeId == null) {
 					routeCode = "-";
 				} else {
@@ -177,7 +193,7 @@ public class MergeGTFSFiles {
 					} 
 				}
 				
-				printWriter.println(routeCode + FILE_SEPARATOR + lineShapes.replace("\"", ""));
+				printWriter.println(routeCode + FILE_SEPARATOR + lineShapes.replace("\"", "") + FILE_SEPARATOR + streetName);
 			}
 			output.close();
 			
@@ -188,8 +204,52 @@ public class MergeGTFSFiles {
 		}
 	}
 	
+	private static String getStreetNameHERE(double lat, double lng) {
+		String urlQueryString = "https://reverse.geocoder.api.here.com/6.2/reversegeocode.json?prox=" + lat + "," + lng
+				+ ",250&mode=retrieveAddresses&maxresults=1&gen=9&app_id=KMr9OUaKNVSNVeorfjy1&app_code=m04i3MJhV2gk-8VzUukETw";
+		
+		JSONObject json = null;
+		String street = "";
+		try {
+			URL url = new URL(urlQueryString);
+			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+			connection.setDoOutput(true);
+			connection.setInstanceFollowRedirects(false);
+			connection.setRequestMethod("GET");
+			connection.setRequestProperty("Content-Type", "application/json");
+			connection.addRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64)");
+			connection.setRequestProperty("charset", "utf-8");
+			connection.connect();
+			InputStream inStream = connection.getInputStream();
+
+			BufferedReader rd = new BufferedReader(new InputStreamReader(inStream, Charset.forName("UTF-8")));
+			StringBuilder sb = new StringBuilder();
+			int cp;
+			while ((cp = rd.read()) != -1) {
+				sb.append((char) cp);
+			}
+			json = new JSONObject(sb.toString());
+
+			// System.out.println(i++ + sb.toString());
+
+			try { // when there are multiple roads, get the first one
+				street = (String) (json.getJSONObject("Response").getJSONArray("View").getJSONObject(0)
+						.getJSONArray("Result").getJSONObject(0).getJSONObject("Location").getJSONObject("Address")
+						.get("Street"));
+			} catch (Exception e) {
+				// there is no road name for this lat/lng
+			}
+
+			connection.disconnect();
+
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
+		return street;
+	}
 	
-	private static void readTripFileGetRoute(String trips) {
+	
+	private static void readTripFileGetRoute(String trips, String city) {
 		
 		
 		BufferedReader brTrips = null;
@@ -202,7 +262,17 @@ public class MergeGTFSFiles {
 
 				String[] data = lineTrips.replace("\"", "").split(FILE_SEPARATOR);
 				String route = data[0];
-				String shapeId = data[7];
+				String shapeId;
+				
+				if (city.equals("Recife")) {
+					shapeId = data[6];
+					
+					if (shapeId.equals("")) { // some lines have some wrong empty fields
+						shapeId = data[7];
+					}
+				} else {
+					shapeId = data[7];
+				}
 
 				if (!mapShapeRouteId.containsKey(shapeId)) {
 					mapShapeRouteId.put(shapeId, route);

@@ -14,6 +14,7 @@ public class ShapePoint extends GeoPoint {
 	private String distanceTraveled;
 	private String route;
 	private String routeFrequency;
+	private String streetName;
 	private List<String> listStopTimestamp;
 
 	public ShapePoint(String id, String latitude, String longitude, String pointSequence, String distanceTraveled) {
@@ -33,10 +34,11 @@ public class ShapePoint extends GeoPoint {
 	
 	// with distanceTraveled and routeFrequency
 	public ShapePoint(String route, String id, String latitude, String longitude, String pointSequence,
-			String distanceTraveled, String routeFrequency) {
+			String distanceTraveled, String routeFrequency, String streetName) {
 		this(id, latitude, longitude, pointSequence, distanceTraveled);
 		this.route = route;
 		this.routeFrequency = routeFrequency;
+		this.streetName  = streetName;
 	}
 
 	public ShapePoint() {
@@ -57,13 +59,25 @@ public class ShapePoint extends GeoPoint {
 
 	public static ShapePoint createShapePointRoute(String line) {
 		StringTokenizer st = new StringTokenizer(line, ",");
-		return new ShapePoint(st.nextToken().replace("\"", ""), 
-				st.nextToken().replace("\"", ""),
-				st.nextToken().replace("\"", ""), 
-				st.nextToken().replace("\"", ""), 
-				st.nextToken().replace("\"", ""),
-				st.nextToken().replace("\"", ""),
-				st.nextToken().replace("\"", ""));
+//		System.out.println(line);
+		
+		String route = st.nextToken().replace("\"", "");
+		String id = st.nextToken().replace("\"", "");
+		String latitude = st.nextToken().replace("\"", "");
+		String longitude = st.nextToken().replace("\"", "");
+		String pointSequence = st.nextToken().replace("\"", "");
+		String distanceTraveled = st.nextToken().replace("\"", "");
+		String routeFrequency = st.nextToken().replace("\"", "");
+		String streetName;
+		
+		try {
+			streetName = st.nextToken().replace("\"", "");
+			
+		} catch (Exception e) { // when there is no street name
+			streetName = "";
+		}
+		
+		return new ShapePoint(route, id, latitude, longitude, pointSequence, distanceTraveled, routeFrequency, streetName);
 	}
 	
 	public static ShapePoint createShapePointRoute(String line, Integer[] sequence, String separatorCharacter) {
@@ -127,6 +141,14 @@ public class ShapePoint extends GeoPoint {
 
 	public void setListStopTimestamp(List<String> listStopTimestamp) {
 		this.listStopTimestamp = listStopTimestamp;
+	}
+
+	public String getStreetName() {
+		return streetName;
+	}
+
+	public void setStreetName(String streetName) {
+		this.streetName = streetName;
 	}
 
 	@Override

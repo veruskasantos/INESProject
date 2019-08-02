@@ -81,7 +81,7 @@ public class MatchingGPSShapeStop {
 	private static final String FILE_SEPARATOR = ",";
 	private static final String SLASH = "/";
 	private static final String OUTPUT_HEADER = "route,tripNum,shapeId,routeFrequency,shapeSequence,shapeLat,shapeLon,distanceTraveledShape,"
-			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,problem";
+			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,streetName,problem";
 
 	public static void main(String[] args) throws IOException, URISyntaxException, ParseException {
 
@@ -1107,6 +1107,7 @@ public class MatchingGPSShapeStop {
 								String currentLonShape = currentShapePoint.getLongitude();
 								String currentRoute = shapeLine.getRoute();
 								String currentRouteFrequency = currentShapePoint.getRouteFrequency();
+								String streetName = currentShapePoint.getStreetName();
 
 								String currentTimestamp;
 								String currentGPSDateTime;
@@ -1133,13 +1134,13 @@ public class MatchingGPSShapeStop {
 
 										addOutput(currentRoute, tripNum, currentShapeId, currentRouteFrequency, currentShapeSequence,
 												currentLatShape, currentLonShape, currentDistanceTraveled, busCode,
-												gpsPointId, latGPS, lonGPS, distanceToShape, currentGPSDateTime,
+												gpsPointId, latGPS, lonGPS, distanceToShape, currentGPSDateTime, streetName,
 												problemCode, listOutput);
 
 									} else { //when there is no gps point for this shape point
 										addOutput(currentRoute, tripNum, currentShapeId, currentRouteFrequency, currentShapeSequence,
 												currentLatShape, currentLonShape, currentDistanceTraveled, "-", "-",
-												"-", "-", "-", "-", "-", listOutput);
+												"-", "-", "-", "-", streetName, "-", listOutput);
 									}
 								} else {
 
@@ -1166,7 +1167,7 @@ public class MatchingGPSShapeStop {
 
 										addOutput(currentRoute, tripNum, currentShapeId, currentRouteFrequency, currentShapeSequence,
 												currentLatShape, currentLonShape, currentDistanceTraveled, busCode,
-												gpsPointId, latGPS, lonGPS, distanceToShape, currentGPSDateTime,
+												gpsPointId, latGPS, lonGPS, distanceToShape, currentGPSDateTime, streetName,
 												problemCode, listOutput);
 
 										previousPoint = nextPoint;
@@ -1192,10 +1193,11 @@ public class MatchingGPSShapeStop {
 									String currentLatShape = currentShapePoint.getLatitude();
 									String currentLonShape = currentShapePoint.getLongitude();
 									String currentRoute = shapeLine.getRoute();
+									String streetName = currentShapePoint.getStreetName();
 
 									addOutput(currentRoute, tripNum, currentShapeId, currentRouteFrequency, currentShapeSequence,
 											currentLatShape, currentLonShape, currentDistanceTraveled, "-", "-", "-",
-											"-", "-", "-", "-", listOutput);
+											"-", "-", "-", streetName, "-", listOutput);
 								}
 							}
 						}
@@ -1207,7 +1209,11 @@ public class MatchingGPSShapeStop {
 					private void addOutput(String route, String tripNum, String shapeId, String routeFrequency, String shapeSequence,
 							String shapeLat, String shapeLon, String distanceTraveledShape, String busCode,
 							String gpsPointId, String gpsLat, String gpsLon, String distanceToShapePoint,
-							String gps_date_time, String problemCode, List<String> listOutput) {
+							String gps_date_time, String streetName, String problemCode, List<String> listOutput) {
+						
+						if (streetName.isEmpty()) {
+							streetName = "-";
+						}
 
 						String stopPointId = mapStopPoints.get(shapeSequence);
 						mapAux.remove(shapeSequence);
@@ -1225,7 +1231,8 @@ public class MatchingGPSShapeStop {
 									+ routeFrequency + FILE_SEPARATOR + shapeSequence + FILE_SEPARATOR + shapeLat + FILE_SEPARATOR + 
 									shapeLon + FILE_SEPARATOR + distanceTraveledShape + FILE_SEPARATOR + busCode + FILE_SEPARATOR + 
 									gpsPointId + FILE_SEPARATOR + gpsLat + FILE_SEPARATOR + gpsLon + FILE_SEPARATOR + distanceToShapePoint + 
-									FILE_SEPARATOR + gps_date_time + FILE_SEPARATOR + stopPointId + FILE_SEPARATOR + problem;
+									FILE_SEPARATOR + gps_date_time + FILE_SEPARATOR + stopPointId + FILE_SEPARATOR + streetName + 
+									FILE_SEPARATOR + problem;
 
 							listOutput.add(outputString);
 						}
@@ -1254,6 +1261,7 @@ public class MatchingGPSShapeStop {
 						String latShape;
 						String lonShape;
 						String route;
+						String streetName;
 						for (Integer indexPointsInBetween : pointsBetweenGPS) {
 
 							currentDistanceTraveled = ((ShapePoint) listGeoPointsShape.get(indexPointsInBetween)).getDistanceTraveled()
@@ -1268,9 +1276,10 @@ public class MatchingGPSShapeStop {
 							lonShape = listGeoPointsShape.get(indexPointsInBetween).getLongitude();
 							route = ((ShapePoint) listGeoPointsShape.get(indexPointsInBetween)).getRoute();
 							distance = ((ShapePoint) listGeoPointsShape.get(indexPointsInBetween)).getDistanceTraveled().toString();
+							streetName = ((ShapePoint) listGeoPointsShape.get(indexPointsInBetween)).getStreetName();
 
 							addOutput(route, tripNum, shapeId, routeFrequency, sequence, latShape, lonShape, distance, busCode, "-",
-									"-", "-", "-", gpsDateTime, "-", listOutput);
+									"-", "-", "-", gpsDateTime, streetName, "-", listOutput);
 						}
 					}
 
@@ -1297,7 +1306,7 @@ public class MatchingGPSShapeStop {
 						OutputString integratedData = new OutputString(splittedEntry[0], splittedEntry[1], splittedEntry[2],
 								splittedEntry[3], splittedEntry[4], splittedEntry[5], splittedEntry[6], splittedEntry[7],
 								splittedEntry[8], splittedEntry[9], splittedEntry[10], splittedEntry[11], splittedEntry[12],
-								splittedEntry[13], splittedEntry[14], splittedEntry[15]);
+								splittedEntry[13], splittedEntry[14], splittedEntry[15], splittedEntry[16]);
 						integratedData.setOutputString(stringOutput);
 						
 						return new Tuple2<String, OutputString>(splittedEntry[8], integratedData);

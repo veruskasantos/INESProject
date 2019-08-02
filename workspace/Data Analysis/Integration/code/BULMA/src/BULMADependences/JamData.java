@@ -11,14 +11,14 @@ public class JamData extends WazeData {
 	private static final long serialVersionUID = 1L;
 	
 	//Jam attributes
-	private String jamID, jamUpdateDateTime, jamUpdateTime, jamUpdateDate, jamBlockDesc, jamExpirationDateTime, jamExpirationTime, jamExpirationDate, jamBlockType;
+	private String jamID, jamUpdateDateTime, jamUpdateTime, jamUpdateDate, jamBlockDesc, jamExpirationDateTime, jamExpirationTime, jamExpirationDate, jamBlockType, jamStreet;
 	private ArrayList<String> jamCoordinates;
 	private int jamDelay, jamLength, jamLevel, jamSeverity;
 	private double jamSpeedKM, distanceToClosestShapePoint;
 
 	public JamData(String id, String delay, String length, String level, String lineCoordinates, String severity,
 			String speedKMH, String updateDateTime, String blockDescription, String expirationDateTime,
-			String blockType) {
+			String blockType, String streetName) {
 		
 		this.jamID = id;
 		this.jamDelay = Integer.valueOf(delay);
@@ -46,6 +46,8 @@ public class JamData extends WazeData {
 		} else {
 			this.jamExpirationDateTime = "-";
 		}
+		
+		this.jamStreet = streetName;
 	}
 	
 	//jamUpdateDate,jamExpirationDateTime,jamBlockType,jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,jamDistanceToClosestShapePoint
@@ -224,6 +226,14 @@ public class JamData extends WazeData {
 
 	public void setDistanceToClosestShapePoint(double distanceToClosestShapePoint) {
 		this.distanceToClosestShapePoint = distanceToClosestShapePoint;
+	}
+
+	public String getJamStreet() {
+		return jamStreet;
+	}
+
+	public void setJamStreet(String jamStreet) {
+		this.jamStreet = jamStreet;
 	}
 
 	//jamUpdateDate,jamExpirationDateTime,jamBlockType,jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,distanceToClosestShapePoint
