@@ -86,7 +86,7 @@ setInterval(function () {
 				// 	document.querySelector("input[class='wm-search__input']").value = 'Curitiba'
 				// 	});
 
-				await page.click("#map > div > div > div > div > div > input[class='wm-search__input']")
+				await page.click("#map > div > div > div > input[class='wm-search__input']")
 				await page.type(txt, city, {delay: 100});
 				await page.waitFor(500);
 
