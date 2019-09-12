@@ -39,7 +39,7 @@ import scala.Tuple2;
 /**
  * 
  * THIRD CODE:
- * Find the consecutive bus, calculating the headway and the distance to it.
+ * Find the CONSECUTIVE bus (with less difference in time at the same stop), calculating the headway and the distance to it.
  * 
  * @input route, trip_number/no_shape_code, shape_id/-, route_frequency/-, shape_sequence/-, shape_lat/-, shape_lon/-, 
  *		distance_traveled, bus_code, gps_id, gps_lat, gps_lon, distance_to_shape_point/-, gps_timestamp,  stop_id, trip_problem_code,
@@ -58,7 +58,7 @@ public class HeadwayLabeling {
 
 	private static final String SEPARATOR = ",";
 	private static final String SLASH = "/";
-	private static final int BB_THRESHOLD = 5; // headway = 5 is considered bb
+	private static final int BB_THRESHOLD = 5; // headway = 5 minutes is considered bb
 	private static final String OUTPUT_HEADER = "route,tripNum,shapeId,routeFrequency,shapeSequence,shapeLat,shapeLon,distanceTraveledShape,"
 			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,problem,precipitation,precipitationTime,alertDateTime,alertSubtype,alertType,"
 			+ "alertRoadType,alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,alertReportMood,alertReportRating,alertSpeed,alertLatitude,"
@@ -229,7 +229,7 @@ public class HeadwayLabeling {
 					}
 				};
 
-				result.mapPartitionsWithIndex(insertHeader, false).saveAsTextFile(output + SLASH + "output_" + stringDate);
+				result.mapPartitionsWithIndex(insertHeader, false).saveAsTextFile(output + SLASH + "output_TESTE_" + stringDate);
 			}
 		}
 	}
@@ -288,7 +288,7 @@ public class HeadwayLabeling {
 								alert, jam);
 
 						String stopID = integratedData.getStopID();
-						String routeStopIDKey = integratedData.getRoute() + ":" + stopID;
+						String routeStopIDKey = integratedData.getRoute() + ":" + integratedData.getShapeId() + ":" + stopID;
 
 						return new Tuple2<String, OutputString>(routeStopIDKey, integratedData);
 					}
@@ -304,11 +304,12 @@ public class HeadwayLabeling {
 			public Tuple2<String, String> call(String busStopsString) throws Exception {
 				String[] splittedEntry = busStopsString.split(SEPARATOR);
 				String route = splittedEntry[6].replace(" ", "");
+				String shapeID = splittedEntry[7].replace(" ", "");
 				String stopID = splittedEntry[2].replace(" ", "");
 				String arrivalTime = splittedEntry[0].replace(" ", "");
 				
 				// route:stopId
-				return new Tuple2<String, String>(route + ":" + stopID, arrivalTime);
+				return new Tuple2<String, String>(route + ":" + shapeID + ":" + stopID, arrivalTime);
 			}
 		}).groupByKey(minPartitions);
 		
@@ -316,7 +317,7 @@ public class HeadwayLabeling {
 		/**
 		 * Calculate headway of bus stops and grouped by route
 		 * 
-		 * @return Grouped route, stops - arrivals - headway
+		 * @return Grouped route-shape, stops - arrivals - headway
 		 * 
 		 */
 		JavaPairRDD<String, Iterable<Tuple2<String, List<Tuple2<String, Long>>>>> rddBusStopsGrouped = rddBusStops.mapToPair(new 
@@ -325,7 +326,7 @@ public class HeadwayLabeling {
 			@Override
 			public Tuple2<String, Tuple2<String, List<Tuple2<String, Long>>>> call(Tuple2<String, Iterable<String>> routeStopID_arrivalTimes) 
 					throws Exception {
-				String routeStopIDKey = routeStopID_arrivalTimes._1; // route:stopId
+				String routeShapeStopIDKey = routeStopID_arrivalTimes._1; // route:stopId
 				
 				//arrivalTimes-headway
 				List<Tuple2<String, Long>> arrivalTimesHeadwayMap = new ArrayList<>();
@@ -344,15 +345,15 @@ public class HeadwayLabeling {
 					for (int i = 0; i < arrivalTimesList.size()-2; i++) {
 						String firstArrival = arrivalTimesList.get(i);
 						String secondArrival = arrivalTimesList.get(i+1);
-						long headway = GeoPoint.getTimeDifference(firstArrival, secondArrival);
+						long headway = GeoPoint.getTimeDifference(firstArrival, secondArrival); //in minutes
 						String firstArrivalSecondArrivalKey = firstArrival.replaceAll(":", "") + "_" + secondArrival.replaceAll(":", "");
 						
 						arrivalTimesHeadwayMap.add(new Tuple2<String, Long>(firstArrivalSecondArrivalKey, headway));
 						
-						if (!scheduledHeadwaysMap.containsKey(routeStopIDKey)) {
-							scheduledHeadwaysMap.put(routeStopIDKey, new HashMap<String,Long>());
+						if (!scheduledHeadwaysMap.containsKey(routeShapeStopIDKey)) {
+							scheduledHeadwaysMap.put(routeShapeStopIDKey, new HashMap<String,Long>());
 						}
-						scheduledHeadwaysMap.get(routeStopIDKey).put(firstArrivalSecondArrivalKey, headway); //firstArrivalTime_secondArrivalTime
+						scheduledHeadwaysMap.get(routeShapeStopIDKey).put(firstArrivalSecondArrivalKey, headway); //firstArrivalTime_secondArrivalTime
 					}
 					
 					if (arrivalTimesList.size() == 2) {
@@ -363,14 +364,16 @@ public class HeadwayLabeling {
 						
 						arrivalTimesHeadwayMap.add(new Tuple2<String, Long>(firstArrivalSecondArrivalKey, headway));
 						
-						if (!scheduledHeadwaysMap.containsKey(routeStopIDKey)) {
-							scheduledHeadwaysMap.put(routeStopIDKey, new HashMap<String,Long>());
+						if (!scheduledHeadwaysMap.containsKey(routeShapeStopIDKey)) {
+							scheduledHeadwaysMap.put(routeShapeStopIDKey, new HashMap<String,Long>());
 						}
-						scheduledHeadwaysMap.get(routeStopIDKey).put(firstArrivalSecondArrivalKey, headway); //firstArrivalTime_secondArrivalTime
+						scheduledHeadwaysMap.get(routeShapeStopIDKey).put(firstArrivalSecondArrivalKey, headway); //firstArrivalTime_secondArrivalTime
 					}
 					
-					return new Tuple2<String, Tuple2<String,List<Tuple2<String, Long>>>>(routeStopIDKey.split(":")[0], 
-							new Tuple2<String,List<Tuple2<String, Long>>>(routeStopIDKey.split(":")[1],  arrivalTimesHeadwayMap));
+					String routeShapeKey = routeShapeStopIDKey.split(":")[0] + ":" + routeShapeStopIDKey.split(":")[1];
+					
+					return new Tuple2<String, Tuple2<String,List<Tuple2<String, Long>>>>(routeShapeKey, 
+							new Tuple2<String,List<Tuple2<String, Long>>>(routeShapeStopIDKey.split(":")[2],  arrivalTimesHeadwayMap));
 					
 				} else {
 					//TODO update code to deal with service (same arrival times for different days)
@@ -387,7 +390,7 @@ public class HeadwayLabeling {
 			}
 		}).groupByKey(minPartitions);
 		
-		 rddBusStopsGrouped.saveAsTextFile(outputPath + SLASH + "scheduled_hd_" + stringDate);
+		 rddBusStopsGrouped.saveAsTextFile(outputPath + SLASH + "scheduled_hd_TESTE_" + stringDate);
 		
 		// Calculate the headway between the buses, considering same route, same stop and same day
 		// Headway: time difference for the bus that is in front
@@ -397,7 +400,7 @@ public class HeadwayLabeling {
 					public Iterator<String> call(
 							Tuple2<String, Iterable<OutputString>> routeStopID_BulmaBusteOutput) throws Exception {
 						
-						String routeStopID = routeStopID_BulmaBusteOutput._1;
+						String routeShapeStopID = routeStopID_BulmaBusteOutput._1;
 						List<OutputString> listBusteOutput = Lists.newArrayList(routeStopID_BulmaBusteOutput._2);
 						Collections.sort(listBusteOutput);
 
@@ -439,19 +442,25 @@ public class HeadwayLabeling {
 							int secondBusTime =  Integer.valueOf(secondBusTimeSplit[0] + secondBusTimeSplit[1] 
 									+ secondBusTimeSplit[2]);
 
-							HashMap<String, Long> arrivalTimesHeadwayMap = scheduledHeadwaysMap.get(routeStopID);
-							for (Entry<String, Long> arrivalTimesHeadway : arrivalTimesHeadwayMap.entrySet()) {
-								String[] arrivalTimes = arrivalTimesHeadway.getKey().split("_");
-								Long headway = arrivalTimesHeadway.getValue();
+							HashMap<String, Long> arrivalTimesHeadwayMap = scheduledHeadwaysMap.get(routeShapeStopID);
+							
+							// When there is only one bus in the route (specially)
+							if (arrivalTimesHeadwayMap != null) {
 								
-								int firstArrivalTime = Integer.valueOf(arrivalTimes[0]);
-								int secondArrivalTime = Integer.valueOf(arrivalTimes[1]);
-								
-								//TODO se esse mapa tiver ordenado, flexibilizar os ifs pq pega o primeiro
-								if (firstBusTime >= firstArrivalTime && firstBusTime <= secondArrivalTime
-										&& secondBusTime >= firstArrivalTime && secondBusTime <= secondArrivalTime) {
-									scheduledHeadway = headway;
-									break;
+								for (Entry<String, Long> arrivalTimesHeadway : arrivalTimesHeadwayMap.entrySet()) {
+									String[] arrivalTimes = arrivalTimesHeadway.getKey().split("_");
+									Long headway = arrivalTimesHeadway.getValue();
+									
+									int firstArrivalTime = Integer.valueOf(arrivalTimes[0]);
+									int secondArrivalTime = Integer.valueOf(arrivalTimes[1]);
+									
+									//TODO se esse mapa tiver ordenado, flexibilizar os ifs pq pega o primeiro
+									//TODO e para horários adiantados do primeiro ônibus e atrasados do segundo ônibus?
+									if (firstBusTime >= firstArrivalTime && firstBusTime <= secondArrivalTime
+											&& secondBusTime >= firstArrivalTime && secondBusTime <= secondArrivalTime) {// match only when the real times are between the scheduled times
+										scheduledHeadway = headway;
+										break;
+									}
 								}
 							}
 							
