@@ -60,12 +60,12 @@ public class HeadwayLabeling {
 	private static final String SLASH = "/";
 	private static final int BB_THRESHOLD = 5; // headway = 5 minutes is considered bb
 	private static final String OUTPUT_HEADER = "route,tripNum,shapeId,routeFrequency,shapeSequence,shapeLat,shapeLon,distanceTraveledShape,"
-			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,problem,precipitation,precipitationTime,alertDateTime,alertSubtype,alertType,"
+			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,problem,precipitation,precipitationTime,precipitationStationDistance,alertDateTime,alertSubtype,alertType,"
 			+ "alertRoadType,alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,alertReportMood,alertReportRating,alertSpeed,alertLatitude,"
 			+ "alertLongitude,alertDistanceToClosestShapePoint,alertIsJamUnifiedAlert,alertInScale,jamUpdateDateTime,jamExpirationDateTime,jamBlockType,"
 			+ "jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,jamDistanceToClosestShapePoint,headway,headwayThreshold,busBunching,GPShour,"
 			+ "tripNumSB,shapeSequenceSB,shapeLatSB,shapeLonSB,distanceTraveledShapeSB,busCodeSB,gpsPointIdSB,gpsLatSB,gpsLonSB,distanceToShapePointSB,gps_datetimeSB,"
-			+ "stopPointIdSB,problemSB,precipitationSB,precipitationTimeSB,alertDateTimeSB,alertSubtypeSB,alertTypeSB,alertRoadTypeSB,alertConfidenceSB,alertNCommentsSB,"
+			+ "stopPointIdSB,problemSB,precipitationSB,precipitationTimeSB,precipitationStationDistanceSB,alertDateTimeSB,alertSubtypeSB,alertTypeSB,alertRoadTypeSB,alertConfidenceSB,alertNCommentsSB,"
 			+ "alertNImagesSB,alertNThumbsUpSB,alertReliabilitySB,alertReportMoodSB,alertReportRatingSB,alertSpeedSB,alertLatitudeSB,alertLongitudeSB,"
 			+ "alertDistanceToClosestShapePointSB,alertIsJamUnifiedAlertSB,alertInScaleSB,jamUpdateDateTimeSB,jamExpirationDateTimeSB,jamBlockTypeSB,jamDelaySB,jamLengthSB,"
 			+ "jamLevelSB,jamSeveritySB,jamSpeedKMSB,jamDistanceToClosestShapePointSB";
@@ -117,6 +117,7 @@ public class HeadwayLabeling {
 	private static int gpsTripProblem = 15;
 	private static int gpsPrecipitation = 16;
 	private static int gpsPrecipitationTime = 17;
+	private static int gpsPrecipitationStationDistance = 18;
 
 	private static HashMap<String, HashMap<String, Long>> scheduledHeadwaysMap = new HashMap<String, HashMap<String, Long>>();
 
@@ -284,7 +285,7 @@ public class HeadwayLabeling {
 								stringSplitted[gpsRouteFrequency], stringSplitted[gpsShapeSequence], stringSplitted[gpsLatShape], stringSplitted[gpsLonShape], 
 								stringSplitted[gpsDistanceTraveled], stringSplitted[gpsBusCode], stringSplitted[gpsPointId], stringSplitted[gpsLat], 
 								stringSplitted[gpsLon], stringSplitted[gpsDistanceToShapePoint], stringSplitted[gpsTimestamp], stringSplitted[gpsStopID], 
-								stringSplitted[gpsTripProblem], stringSplitted[gpsPrecipitation], stringSplitted[gpsPrecipitationTime],
+								stringSplitted[gpsTripProblem], stringSplitted[gpsPrecipitation], stringSplitted[gpsPrecipitationTime], stringSplitted[gpsPrecipitationStationDistance],
 								alert, jam);
 
 						String stopID = integratedData.getStopID();
@@ -416,8 +417,10 @@ public class HeadwayLabeling {
 							for (int j = i+1; j < listBusteOutput.size()-1; j++) {
 								OutputString nextBusteOutput = listBusteOutput.get(j);
 								
-								if (!nextBusteOutput.getBusCode().equals(currentBusCode)) { //calculate headways just for different buscode 
+								if (nextBusteOutput.getBusCode().equals(currentBusCode)) { // discard buses when the next one is the same (avoid higher headways)
+									break;
 
+								} else { // calculate headways just for different buscode
 									long currentHeadway = GeoPoint.getTimeDifference(currentBusteOutput.getTimestamp(), nextBusteOutput.getTimestamp());
 									if (currentHeadway < closestHeadway) {
 										closestNextBus = nextBusteOutput;
@@ -427,61 +430,62 @@ public class HeadwayLabeling {
 								}
 							}
 							
-							if (closestNextBus == null) { //when there is only one bus for the route
-								closestNextBus = listBusteOutput.get(i+1);
-								closestHeadway = GeoPoint.getTimeDifference(currentBusteOutput.getTimestamp(), closestNextBus.getTimestamp());
-							}
-
-							//checking bus bunching with scheduled headway
-							Long scheduledHeadway = null;
-							String[] firstBusTimeSplit = currentBusteOutput.getTimestamp().split(":");
-							int firstBusTime =  Integer.valueOf(firstBusTimeSplit[0] + firstBusTimeSplit[1] 
-									+ firstBusTimeSplit[2]);
+							// when there is only one bus for the route, we discard it because the bus bunching definition
+							if (closestNextBus != null) {
+								// closestNextBus = listBusteOutput.get(i+1);
+								// closestHeadway = GeoPoint.getTimeDifference(currentBusteOutput.getTimestamp(), closestNextBus.getTimestamp());
 							
-							String[] secondBusTimeSplit = closestNextBus.getTimestamp().split(":");
-							int secondBusTime =  Integer.valueOf(secondBusTimeSplit[0] + secondBusTimeSplit[1] 
-									+ secondBusTimeSplit[2]);
-
-							HashMap<String, Long> arrivalTimesHeadwayMap = scheduledHeadwaysMap.get(routeShapeStopID);
-							
-							// When there is only one bus in the route (specially)
-							if (arrivalTimesHeadwayMap != null) {
+								//checking bus bunching with scheduled headway
+								Long scheduledHeadway = null;
+								String[] firstBusTimeSplit = currentBusteOutput.getTimestamp().split(":");
+								int firstBusTime =  Integer.valueOf(firstBusTimeSplit[0] + firstBusTimeSplit[1] 
+										+ firstBusTimeSplit[2]);
 								
-								for (Entry<String, Long> arrivalTimesHeadway : arrivalTimesHeadwayMap.entrySet()) {
-									String[] arrivalTimes = arrivalTimesHeadway.getKey().split("_");
-									Long headway = arrivalTimesHeadway.getValue();
+								String[] secondBusTimeSplit = closestNextBus.getTimestamp().split(":");
+								int secondBusTime =  Integer.valueOf(secondBusTimeSplit[0] + secondBusTimeSplit[1] 
+										+ secondBusTimeSplit[2]);
+	
+								HashMap<String, Long> arrivalTimesHeadwayMap = scheduledHeadwaysMap.get(routeShapeStopID);
+								
+								// When there is only one bus in the route (specially)
+								if (arrivalTimesHeadwayMap != null) {
 									
-									int firstArrivalTime = Integer.valueOf(arrivalTimes[0]);
-									int secondArrivalTime = Integer.valueOf(arrivalTimes[1]);
-									
-									//TODO se esse mapa tiver ordenado, flexibilizar os ifs pq pega o primeiro
-									//TODO e para horários adiantados do primeiro ônibus e atrasados do segundo ônibus?
-									if (firstBusTime >= firstArrivalTime && firstBusTime <= secondArrivalTime
-											&& secondBusTime >= firstArrivalTime && secondBusTime <= secondArrivalTime) {// match only when the real times are between the scheduled times
-										scheduledHeadway = headway;
-										break;
+									for (Entry<String, Long> arrivalTimesHeadway : arrivalTimesHeadwayMap.entrySet()) {
+										String[] arrivalTimes = arrivalTimesHeadway.getKey().split("_");
+										Long headway = arrivalTimesHeadway.getValue();
+										
+										int firstArrivalTime = Integer.valueOf(arrivalTimes[0]);
+										int secondArrivalTime = Integer.valueOf(arrivalTimes[1]);
+										
+										//TODO se esse mapa tiver ordenado, flexibilizar os ifs pq pega o primeiro
+										//TODO e para horários adiantados do primeiro ônibus e atrasados do segundo ônibus?
+										if (firstBusTime >= firstArrivalTime && firstBusTime <= secondArrivalTime
+												&& secondBusTime >= firstArrivalTime && secondBusTime <= secondArrivalTime) {// match only when the real times are between the scheduled times
+											scheduledHeadway = headway;
+											break;
+										}
 									}
 								}
+								
+								boolean busBunching = true;
+								int headwayThreshold = BB_THRESHOLD; // if there is no data, consider a threshold
+								
+								if (scheduledHeadway != null) {
+									headwayThreshold = (int) (scheduledHeadway/4);
+								}
+								
+								if (closestHeadway > headwayThreshold) {
+									busBunching = false;
+								}
+								
+								//saving
+								currentBusteOutput.setHeadway(closestHeadway);
+								currentBusteOutput.setHeadwayThreshold(headwayThreshold);
+								currentBusteOutput.setNextBus(closestNextBus);
+								currentBusteOutput.setBusBunching(busBunching);
+								
+								labeledIntegratedData.add(currentBusteOutput.getLabeledIntegratedDataString(true)); //true to replace "-" by ""
 							}
-							
-							boolean busBunching = true;
-							int headwayThreshold = BB_THRESHOLD; // if there is no data, consider a threshold
-							
-							if (scheduledHeadway != null) {
-								headwayThreshold = (int) (scheduledHeadway/4);
-							}
-							
-							if (closestHeadway > headwayThreshold) {
-								busBunching = false;
-							}
-							
-							//saving
-							currentBusteOutput.setHeadway(closestHeadway);
-							currentBusteOutput.setHeadwayThreshold(headwayThreshold);
-							currentBusteOutput.setNextBus(closestNextBus);
-							currentBusteOutput.setBusBunching(busBunching);
-							
-							labeledIntegratedData.add(currentBusteOutput.getLabeledIntegratedDataString(true)); //true to replace "-" by ""
 						}
 
 						return labeledIntegratedData.iterator();

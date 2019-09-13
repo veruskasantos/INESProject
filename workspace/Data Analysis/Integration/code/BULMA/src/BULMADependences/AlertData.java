@@ -5,6 +5,7 @@ import java.util.List;
 public class AlertData extends WazeData {
 
 	private static final long serialVersionUID = 1L;
+	private static String DELIMITER = ",";
 	//Alerts attributes
 	private String alertID, alertDateTime, alertTime, alertDate, alertReportDescription, alertSubtype, alertType, alertRoadType, alertStreet;
 	private int alertConfidence, alertNComments, alertNImages, alertNThumbsUp, alertReliability, alertReportMood;
@@ -259,6 +260,37 @@ public class AlertData extends WazeData {
 		this.alertStreet = alertStreet;
 	}
 
+//	alertDateTime,"
+//	+ "alertSubtype,alertType,alertRoadType,alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,alertReportMood,alertReportRating,alertSpeed,alertLatitude,"
+//	+ "alertLongitude,alertDistanceToClosestShapePoint,alertIsJamUnifiedAlert,alertInScale
+	public static String getDefaultAlert(String gpsDateTime, String gpsLat, String gpsLon, String gps2ShapeDistance) {
+		String alertDateTime = gpsDateTime;
+		String alertSubtype = "NORMAL";
+		String alertType = "NORMAL";
+		String alertRoadType = "-";
+		int alertConfidence = 5;
+		String alertNComments = "-";
+		String alertNImages = "-";
+		String alertNThumbsUp = "-";
+		int alertReliability = 10;
+		String alertReportMood = "-";
+		int alertReportRating = 5;
+		String alertSpeed = "-";
+		String alertLatitude = gpsLat;
+		String alertLongitude = gpsLon;
+		String alertDistanceToClosestShapePoint = gps2ShapeDistance;
+		String alertIsJamUnifiedAlert = "-";
+		String alertInScale = "-";
+		String newAlertData = alertDateTime + DELIMITER + alertSubtype + DELIMITER + alertType  + DELIMITER + alertRoadType 
+				+ DELIMITER + alertConfidence + DELIMITER + alertNComments + DELIMITER + alertNImages + DELIMITER + alertNThumbsUp
+				 + DELIMITER +  alertReliability + DELIMITER + alertReportMood + DELIMITER + alertReportRating + DELIMITER +  alertSpeed 
+				 + DELIMITER + alertLatitude + DELIMITER + alertLongitude + DELIMITER + alertDistanceToClosestShapePoint + DELIMITER +
+				 alertIsJamUnifiedAlert + DELIMITER + alertInScale;
+		
+		return newAlertData;
+		
+	}
+	
 	//alertDate,alertSubtype,alertType,alertRoadType,alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,alertReportMood,alertReportRating,alertSpeed,alertLatitude,alertLongitude,distanceToClosestShapePoint,alertIsJamUnifiedAlert,alertInScale
 	public String getDataString() {
 		return  alertDateTime + SEPARATOR + alertSubtype + SEPARATOR + alertType + SEPARATOR + alertRoadType + SEPARATOR + 

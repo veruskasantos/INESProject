@@ -65,7 +65,7 @@ public class MatchingGPSWeatherWaze {
 	private static Map<String, Tuple2<String, String>> stationCoordinatesMap;
 	private static Map<String, List<Tuple2<String, Double>>> stationDataMap;
 	private static final String OUTPUT_HEADER = "route,tripNum,shapeId,routeFrequency,shapeSequence,shapeLat,shapeLon,distanceTraveledShape,"
-			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,problem,precipitation,precipitationTime,alertDateTime,"
+			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,problem,precipitation,precipitationTime,precipitationStationDistance,alertDateTime,"
 			+ "alertSubtype,alertType,alertRoadType,alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,alertReportMood,alertReportRating,alertSpeed,alertLatitude,"
 			+ "alertLongitude,alertDistanceToClosestShapePoint,alertIsJamUnifiedAlert,alertInScale,jamUpdateDateTime,jamExpirationDateTime,jamBlockType,"
 			+ "jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,jamDistanceToClosestShapePoint";
@@ -214,7 +214,7 @@ public class MatchingGPSWeatherWaze {
 						return output.iterator();
 					}
 				};
-				result.mapPartitionsWithIndex(insertHeader, false).saveAsTextFile(output + SLASH + "Integrated_Data_" + stringDate);
+				result.mapPartitionsWithIndex(insertHeader, false).saveAsTextFile(output + SLASH + "Integrated_Data_TESTE_" + stringDate);
 			}
 		}
 	}
@@ -277,7 +277,7 @@ public class MatchingGPSWeatherWaze {
 			}
 		});
 		
-		rddPrecipitations.saveAsTextFile(outputPath + SLASH + "precipitation_aux_" + stringDate);
+		rddPrecipitations.saveAsTextFile(outputPath + SLASH + "precipitation_aux_TESTE_" + stringDate);
 		
 		/**
 		 * Matching precipitation with gps and gtfs data
@@ -309,6 +309,7 @@ public class MatchingGPSWeatherWaze {
 							double currentDistance = GeoPoint.getDistanceInMeters(latGP3S, lonGP3S, stationLat, stationLon);
 							if (currentDistance < closestDistance) {
 								closestStation = stationCode;
+								closestDistance = currentDistance;
 							}
 						}
 						
@@ -344,6 +345,8 @@ public class MatchingGPSWeatherWaze {
 						matchingGP3S.setPrecipitation(closestTimePrecipitation._2);
 						matchingGP3S.setPrecipitationTime(closestTimePrecipitation._1.split(" ")[1]);
 						matchingGP3S.setPrecipitationDateTime(closestTimePrecipitation._1);
+						matchingGP3S.setPrecStationDistanceToGPS(closestDistance);
+						
 						
 						String latLonKey = String.valueOf(matchingGP3S.getLatShape()).replace(" ",  "").substring(0, 4) + ":" + String.valueOf(matchingGP3S.getLonShape()).replace(" ",  "").substring(0, 5);
 
@@ -446,7 +449,7 @@ public class MatchingGPSWeatherWaze {
 		});
 		
 		
-		rddMatchedAlert.saveAsTextFile(outputPath + SLASH + "alert_aux_" + stringDate);
+		rddMatchedAlert.saveAsTextFile(outputPath + SLASH + "alert_aux_TESTE_" + stringDate);
 		
 		JavaRDD<String> jamsString = context.textFile(dayWazePath + "jams_" + stringDate + ".csv", minPartitions)
 				.mapPartitionsWithIndex(removeHeader, false);

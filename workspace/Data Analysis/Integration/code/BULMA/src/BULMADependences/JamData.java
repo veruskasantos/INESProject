@@ -9,6 +9,7 @@ import scala.Tuple2;
 public class JamData extends WazeData {
 
 	private static final long serialVersionUID = 1L;
+	private static String DELIMITER = ",";
 	
 	//Jam attributes
 	private String jamID, jamUpdateDateTime, jamUpdateTime, jamUpdateDate, jamBlockDesc, jamExpirationDateTime, jamExpirationTime, jamExpirationDate, jamBlockType, jamStreet;
@@ -236,6 +237,24 @@ public class JamData extends WazeData {
 		this.jamStreet = jamStreet;
 	}
 
+//	jamUpdateDateTime,jamExpirationDateTime,jamBlockType,"
+//+ "jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,jamDistanceToClosestShapePoint"
+	public static String getDefaultJam(String gps_datetime, String distanceToShapePoint) {
+		String jamUpdateDateTime = gps_datetime;
+		String jamExpirationDateTime = "-";
+		String jamBlockType = "NORMAL";
+		int jamDelay = 0;
+		int jamLength = 0;
+		int jamLevel = 0; 
+		int jamSeverity = 0;
+		String jamSpeedKM = "-";
+		String jamDistanceToClosestShapePoint = distanceToShapePoint;
+		
+		String newJamData = jamUpdateDateTime + DELIMITER + jamExpirationDateTime + DELIMITER + jamBlockType + DELIMITER + jamDelay + 
+				DELIMITER + jamLength + DELIMITER + jamLevel + DELIMITER + jamSeverity + DELIMITER + jamSpeedKM + DELIMITER + jamDistanceToClosestShapePoint;
+		return newJamData;
+	}
+	
 	//jamUpdateDate,jamExpirationDateTime,jamBlockType,jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,distanceToClosestShapePoint
 	public String getDataString() {
 		return jamUpdateDateTime + SEPARATOR + jamExpirationDateTime + SEPARATOR + jamBlockType + SEPARATOR + 
