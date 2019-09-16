@@ -6,12 +6,14 @@ public class AlertData extends WazeData {
 
 	private static final long serialVersionUID = 1L;
 	private static String DELIMITER = ",";
+	
 	//Alerts attributes
-	private String alertID, alertDateTime, alertTime, alertDate, alertReportDescription, alertSubtype, alertType, alertRoadType, alertStreet;
-	private int alertConfidence, alertNComments, alertNImages, alertNThumbsUp, alertReliability, alertReportMood;
-	private double alertReportRating, alertSpeed, alertLatitude, alertLongitude, distanceToClosestShapePoint;
+	private String alertID, alertDateTime, alertTime, alertDate, alertReportDescription, alertSubtype, alertType, alertRoadType, alertStreet, 
+	alertLatitude, alertLongitude, alertNComments, alertNImages, alertNThumbsUp, alertReportMood, alertSpeed, distanceToClosestShapePoint;
+	private int alertConfidence, alertReliability;
+	private double alertReportRating;
 	private boolean alertIsJamUnifiedAlert, alertInScale;
-	private List<Double> alertLocation;
+	private List<String> alertLocation;
 
 	public AlertData(String id, String confidence, String inScale, String isJamUnifiedAlert, String location,
 			String nComments, String nImages, String nThumbsUp, String publicationTime, String reliability,
@@ -25,17 +27,17 @@ public class AlertData extends WazeData {
 		this.alertLocation = getLatLon(location); // {"x":-34.945077,"y":-8.13114}
 		this.alertLatitude = this.alertLocation.get(0); 
 		this.alertLongitude = this.alertLocation.get(1);
-		this.alertNComments = Integer.valueOf(nComments);
-		this.alertNImages = Integer.valueOf(nImages);
-		this.alertNThumbsUp = Integer.valueOf(nThumbsUp);
+		this.alertNComments = nComments;
+		this.alertNImages = nImages;
+		this.alertNThumbsUp = nThumbsUp;
 		this.alertDateTime = getDateTimeFromMillis(publicationTime);
 		this.alertTime = alertDateTime.split(" ")[1];
 		this.alertDate = alertDateTime.split(" ")[0];
 		this.alertReliability = Integer.valueOf(reliability);
 		this.alertReportDescription = reportDescription;
-		this.alertReportMood = Integer.valueOf(reportMood);
+		this.alertReportMood = reportMood;
 		this.alertReportRating = Double.valueOf(reportRating);
-		this.alertSpeed = Double.valueOf(speed);
+		this.alertSpeed = speed;
 		this.alertSubtype = subtype;
 		this.alertType = type;
 		this.alertRoadType = roadType;
@@ -54,29 +56,29 @@ public class AlertData extends WazeData {
 		this.alertConfidence = Integer.valueOf(confidence);
 		this.alertInScale = Boolean.valueOf(inScale);
 		this.alertIsJamUnifiedAlert = Boolean.valueOf(isJamUnifiedAlert);
-		this.alertLatitude = Double.valueOf(latitude); 
-		this.alertLongitude = Double.valueOf(longitude);
-		this.alertNComments = Integer.valueOf(nComments);
-		this.alertNImages = Integer.valueOf(nImages);
-		this.alertNThumbsUp = Integer.valueOf(nThumbsUp);
+		this.alertLatitude = latitude; 
+		this.alertLongitude = longitude;
+		this.alertNComments = nComments;
+		this.alertNImages = nImages;
+		this.alertNThumbsUp = nThumbsUp;
 		this.alertDateTime = publicationTime;
 		this.alertTime = alertDateTime.split(" ")[1];
 		this.alertDate = alertDateTime.split(" ")[0];
 		this.alertReliability = Integer.valueOf(reliability);
-		this.alertReportMood = Integer.valueOf(reportMood);
+		this.alertReportMood = reportMood;
 		this.alertReportRating = Double.valueOf(reportRating);
-		this.alertSpeed = Double.valueOf(speed);
+		this.alertSpeed = speed;
 		this.alertSubtype = subtype;
 		this.alertType = type;
 		this.alertRoadType = roadType;
-		this.distanceToClosestShapePoint = Double.valueOf(distanceToClosestShapePoint);
+		this.distanceToClosestShapePoint = distanceToClosestShapePoint;
 	}
 	
-	public List<Double> getAlertLocation() {
+	public List<String> getAlertLocation() {
 		return alertLocation;
 	}
 
-	public void setAlertLocation(List<Double> alertLocation) {
+	public void setAlertLocation(List<String> alertLocation) {
 		this.alertLocation = alertLocation;
 	}
 	
@@ -88,19 +90,19 @@ public class AlertData extends WazeData {
 		this.alertID = alertID;
 	}
 
-	public Double getAlertLatitude() {
+	public String getAlertLatitude() {
 		return alertLatitude;
 	}
 
-	public void setAlertLatitude(Double alertLatitude) {
+	public void setAlertLatitude(String alertLatitude) {
 		this.alertLatitude = alertLatitude;
 	}
 
-	public Double getAlertLongitude() {
+	public String getAlertLongitude() {
 		return alertLongitude;
 	}
 
-	public void setAlertLongitude(Double alertLongitude) {
+	public void setAlertLongitude(String alertLongitude) {
 		this.alertLongitude = alertLongitude;
 	}
 
@@ -160,27 +162,27 @@ public class AlertData extends WazeData {
 		this.alertInScale = alertInScale;
 	}
 
-	public int getAlertNComments() {
+	public String getAlertNComments() {
 		return alertNComments;
 	}
 
-	public void setAlertNComments(int alertNComments) {
+	public void setAlertNComments(String alertNComments) {
 		this.alertNComments = alertNComments;
 	}
 
-	public int getAlertNImages() {
+	public String getAlertNImages() {
 		return alertNImages;
 	}
 
-	public void setAlertNImages(int alertNImages) {
+	public void setAlertNImages(String alertNImages) {
 		this.alertNImages = alertNImages;
 	}
 
-	public int getAlertNThumbsUp() {
+	public String getAlertNThumbsUp() {
 		return alertNThumbsUp;
 	}
 
-	public void setAlertNThumbsUp(int alertNThumbsUp) {
+	public void setAlertNThumbsUp(String alertNThumbsUp) {
 		this.alertNThumbsUp = alertNThumbsUp;
 	}
 
@@ -192,11 +194,11 @@ public class AlertData extends WazeData {
 		this.alertReliability = alertReliability;
 	}
 
-	public int getAlertReportMood() {
+	public String getAlertReportMood() {
 		return alertReportMood;
 	}
 
-	public void setAlertReportMood(int alertReportMood) {
+	public void setAlertReportMood(String alertReportMood) {
 		this.alertReportMood = alertReportMood;
 	}
 
@@ -208,11 +210,11 @@ public class AlertData extends WazeData {
 		this.alertReportRating = alertReportRating;
 	}
 
-	public double getAlertSpeed() {
+	public String getAlertSpeed() {
 		return alertSpeed;
 	}
 
-	public void setAlertSpeed(double alertSpeed) {
+	public void setAlertSpeed(String alertSpeed) {
 		this.alertSpeed = alertSpeed;
 	}
 
@@ -244,11 +246,11 @@ public class AlertData extends WazeData {
 		this.alertDate = alertDate;
 	}
 
-	public double getDistanceToClosestShapePoint() {
+	public String getDistanceToClosestShapePoint() {
 		return distanceToClosestShapePoint;
 	}
 
-	public void setDistanceToClosestShapePoint(double distanceToClosestShapePoint) {
+	public void setDistanceToClosestShapePoint(String distanceToClosestShapePoint) {
 		this.distanceToClosestShapePoint = distanceToClosestShapePoint;
 	}
 
@@ -288,7 +290,6 @@ public class AlertData extends WazeData {
 				 alertIsJamUnifiedAlert + DELIMITER + alertInScale;
 		
 		return newAlertData;
-		
 	}
 	
 	//alertDate,alertSubtype,alertType,alertRoadType,alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,alertReportMood,alertReportRating,alertSpeed,alertLatitude,alertLongitude,distanceToClosestShapePoint,alertIsJamUnifiedAlert,alertInScale

@@ -61,14 +61,13 @@ public class MatchingGPSWeatherWaze {
 	private static final String SEPARATOR_WAZE = ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)";
 	private static final String SLASH = "/";
 	//TODO 1 - take only CLOSEST waze data from the streets where buses pass
-	private static final Double ALERT_DISTANCE_THRESHOLD = 1000.0; //1 KM to consider the waze alert related to gps
 	private static Map<String, Tuple2<String, String>> stationCoordinatesMap;
 	private static Map<String, List<Tuple2<String, Double>>> stationDataMap;
 	private static final String OUTPUT_HEADER = "route,tripNum,shapeId,routeFrequency,shapeSequence,shapeLat,shapeLon,distanceTraveledShape,"
 			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,problem,precipitation,precipitationTime,precipitationStationDistance,alertDateTime,"
 			+ "alertSubtype,alertType,alertRoadType,alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,alertReportMood,alertReportRating,alertSpeed,alertLatitude,"
 			+ "alertLongitude,alertDistanceToClosestShapePoint,alertIsJamUnifiedAlert,alertInScale,jamUpdateDateTime,jamExpirationDateTime,jamBlockType,"
-			+ "jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,jamDistanceToClosestShapePoint";
+			+ "jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM";
 	
 	//input variables index
 	private static int wazeId = 0;
@@ -214,7 +213,7 @@ public class MatchingGPSWeatherWaze {
 						return output.iterator();
 					}
 				};
-				result.mapPartitionsWithIndex(insertHeader, false).saveAsTextFile(output + SLASH + "Integrated_Data_TESTE_" + stringDate);
+				result.mapPartitionsWithIndex(insertHeader, false).saveAsTextFile(output + SLASH + "Integrated_Data_" + stringDate);
 			}
 		}
 	}
@@ -277,7 +276,7 @@ public class MatchingGPSWeatherWaze {
 			}
 		});
 		
-		rddPrecipitations.saveAsTextFile(outputPath + SLASH + "precipitation_aux_TESTE_" + stringDate);
+		rddPrecipitations.saveAsTextFile(outputPath + SLASH + "precipitation_aux_" + stringDate);
 		
 		/**
 		 * Matching precipitation with gps and gtfs data
@@ -422,7 +421,6 @@ public class MatchingGPSWeatherWaze {
 					String gpsStreet = matchingGP3SP.getStreetName();
 					
 					List<AlertData> streetAlerts = new ArrayList<>();
-					double closestDistanceAlert = ALERT_DISTANCE_THRESHOLD;
 					AlertData closestAlert = null;
 					
 					for (AlertData alert : wazeData) { // Get the closest alert by street name
@@ -435,7 +433,9 @@ public class MatchingGPSWeatherWaze {
 					if (!streetAlerts.isEmpty()) { // sort alert list by date to get the most recent
 						Collections.sort(streetAlerts);
 						closestAlert = streetAlerts.get(streetAlerts.size()-1);
-						closestAlert.setDistanceToClosestShapePoint(closestDistanceAlert);
+						double closestDistanceAlert = GeoPoint.getDistanceInMeters(Double.valueOf(matchingGP3SP.getLatShape()), Double.valueOf(matchingGP3SP.getLonShape()), 
+								Double.valueOf(closestAlert.getAlertLatitude()), Double.valueOf(closestAlert.getAlertLongitude()));
+						closestAlert.setDistanceToClosestShapePoint(String.valueOf(closestDistanceAlert));
 						matchingGP3SP.setAlertData(closestAlert);
 					}
 					
@@ -449,7 +449,7 @@ public class MatchingGPSWeatherWaze {
 		});
 		
 		
-		rddMatchedAlert.saveAsTextFile(outputPath + SLASH + "alert_aux_TESTE_" + stringDate);
+		rddMatchedAlert.saveAsTextFile(outputPath + SLASH + "alert_aux_" + stringDate);
 		
 		JavaRDD<String> jamsString = context.textFile(dayWazePath + "jams_" + stringDate + ".csv", minPartitions)
 				.mapPartitionsWithIndex(removeHeader, false);
@@ -523,7 +523,6 @@ public class MatchingGPSWeatherWaze {
 					String gpsStreet = matchingGP3SP.getStreetName();
 					
 					List<JamData> streetJams = new ArrayList<>();
-					double closestDistanceJam = ALERT_DISTANCE_THRESHOLD;
 					JamData closestJam = null;
 					
 					for (JamData jam : wazeData) { //check each jam alert of the same hour
@@ -536,7 +535,6 @@ public class MatchingGPSWeatherWaze {
 					if (!streetJams.isEmpty()) { // sort alert list by date to get the most recent
 						Collections.sort(streetJams);
 						closestJam = streetJams.get(streetJams.size()-1);
-						closestJam.setDistanceToClosestShapePoint(closestDistanceJam);
 						matchingGP3SP.setJamData(closestJam);
 					}
 					

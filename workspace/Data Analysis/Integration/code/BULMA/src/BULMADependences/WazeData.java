@@ -16,13 +16,24 @@ public class WazeData implements Serializable, Comparable<WazeData> {
 	
 	public WazeData() {}
 	
-	public List<Double> getLatLon(String coordinates) {
+	public List<Double> getLatLonDouble(String coordinates) {
 		List<Double> latLonList = new ArrayList<>();
 		String[] coordinatesSplitted = coordinates.split(":");
 		
 		latLonList.add(Double.valueOf(coordinatesSplitted[2].replace("}", "").replace("\"", "").replace("]", ""))); //lat = y
 		latLonList.add(Double.valueOf(coordinatesSplitted[1].substring(0, 
 				coordinatesSplitted[1].indexOf(",")))); //lon = x
+		
+		return latLonList;
+	}
+	
+	public List<String> getLatLon(String coordinates) {
+		List<String> latLonList = new ArrayList<>();
+		String[] coordinatesSplitted = coordinates.split(":");
+		
+		latLonList.add(coordinatesSplitted[2].replace("}", "").replace("\"", "").replace("]", "")); //lat = y
+		latLonList.add(coordinatesSplitted[1].substring(0, 
+				coordinatesSplitted[1].indexOf(","))); //lon = x
 		
 		return latLonList;
 	}

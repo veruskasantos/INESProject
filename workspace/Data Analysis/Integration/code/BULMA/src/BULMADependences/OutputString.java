@@ -411,6 +411,10 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 		String newOutputString = "";
 		if (checkMissingValues) {
 			newOutputString = oldOutputString.replaceAll(",-,", ",,").replaceAll(",-,", ",,"); //replace "-" by "" because pandas dataframe reads as object columns with multiple types
+			
+			if (newOutputString.endsWith(",-")) { //to replace the last "-" to ""
+				newOutputString = newOutputString.substring(0, newOutputString.length()-1);
+			}
 		}
 		
 		return newOutputString ;
@@ -425,7 +429,7 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 		}
 		
 //		String jamDataString = "-,-,-,-,-,-,-,-,-";
-		String jamDataString = JamData.getDefaultJam(this.getGps_datetime(), this.getDistanceToShapePoint());
+		String jamDataString = JamData.getDefaultJam(this.getGps_datetime());
 		if (jamData != null) {
 			jamDataString = jamData.getDataString();
 		}
@@ -449,8 +453,8 @@ public class OutputString implements Serializable, Comparable<OutputString>{
 		}
 		
 //		String jamDataString = "-,-,-,-,-,-,-,-,";
-		String jamDataString = JamData.getDefaultJam(this.getGps_datetime(), this.getDistanceToShapePoint());
-		if (jamData != null) {
+		String jamDataString = JamData.getDefaultJam(this.getGps_datetime());
+		if (jamData != null) { // sometimes there is no jamBlockType: "-"
 			jamDataString = jamData.getDataString();
 		}
 		

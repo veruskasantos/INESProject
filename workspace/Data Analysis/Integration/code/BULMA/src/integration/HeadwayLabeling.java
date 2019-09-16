@@ -63,42 +63,14 @@ public class HeadwayLabeling {
 			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,problem,precipitation,precipitationTime,precipitationStationDistance,alertDateTime,alertSubtype,alertType,"
 			+ "alertRoadType,alertConfidence,alertNComments,alertNImages,alertNThumbsUp,alertReliability,alertReportMood,alertReportRating,alertSpeed,alertLatitude,"
 			+ "alertLongitude,alertDistanceToClosestShapePoint,alertIsJamUnifiedAlert,alertInScale,jamUpdateDateTime,jamExpirationDateTime,jamBlockType,"
-			+ "jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,jamDistanceToClosestShapePoint,headway,headwayThreshold,busBunching,GPShour,"
+			+ "jamDelay,jamLength,jamLevel,jamSeverity,jamSpeedKM,headway,headwayThreshold,busBunching,GPShour,"
 			+ "tripNumSB,shapeSequenceSB,shapeLatSB,shapeLonSB,distanceTraveledShapeSB,busCodeSB,gpsPointIdSB,gpsLatSB,gpsLonSB,distanceToShapePointSB,gps_datetimeSB,"
 			+ "stopPointIdSB,problemSB,precipitationSB,precipitationTimeSB,precipitationStationDistanceSB,alertDateTimeSB,alertSubtypeSB,alertTypeSB,alertRoadTypeSB,alertConfidenceSB,alertNCommentsSB,"
 			+ "alertNImagesSB,alertNThumbsUpSB,alertReliabilitySB,alertReportMoodSB,alertReportRatingSB,alertSpeedSB,alertLatitudeSB,alertLongitudeSB,"
 			+ "alertDistanceToClosestShapePointSB,alertIsJamUnifiedAlertSB,alertInScaleSB,jamUpdateDateTimeSB,jamExpirationDateTimeSB,jamBlockTypeSB,jamDelaySB,jamLengthSB,"
-			+ "jamLevelSB,jamSeveritySB,jamSpeedKMSB,jamDistanceToClosestShapePointSB";
+			+ "jamLevelSB,jamSeveritySB,jamSpeedKMSB";
 	
 	//input variables index
-	private static int wazePublicationTime = 18;
-	private static int wazeSubtype = 19;
-	private static int wazeType = 20;
-	private static int wazeRoadType = 21;
-	private static int wazeConfidence = 22;
-	private static int wazeNComments = 23;
-	private static int wazeNImages = 24;
-	private static int wazeNThumbsUp = 25;
-	private static int wazeReliability = 26;
-	private static int wazeReportMood = 27;
-	private static int wazeReportRating = 28;
-	private static int wazeSpeed = 29;
-	private static int wazeLatitude = 30;
-	private static int wazeLongitude = 31;
-	private static int wazeDistanceToClosShapePoint = 32;
-	private static int wazeIsJamUnifiedAlert = 33;
-	private static int wazeInScale = 34;
-
-	private static int jamUpdateDateTime = 35;
-	private static int jamExpirationDateTime = 36;
-	private static int jamBlockType = 37;
-	private static int jamDelay = 38;
-	private static int jamLength = 39;
-	private static int jamLevel = 40;
-	private static int jamSeverity = 41;
-	private static int jamSpeedKMH = 42;
-	private static int jamDistanceToClosShapePoint = 43;
-	
 	private static int gpsRoute = 0;
 	private static int gpsTripNum = 1;
 	private static int gpsShapeId = 2;
@@ -118,6 +90,33 @@ public class HeadwayLabeling {
 	private static int gpsPrecipitation = 16;
 	private static int gpsPrecipitationTime = 17;
 	private static int gpsPrecipitationStationDistance = 18;
+	
+	private static int wazePublicationTime = 19;
+	private static int wazeSubtype = 20;
+	private static int wazeType = 21;
+	private static int wazeRoadType = 22;
+	private static int wazeConfidence = 23;
+	private static int wazeNComments = 24;
+	private static int wazeNImages = 25;
+	private static int wazeNThumbsUp = 26;
+	private static int wazeReliability = 27;
+	private static int wazeReportMood = 28;
+	private static int wazeReportRating = 29;
+	private static int wazeSpeed = 30;
+	private static int wazeLatitude = 31;
+	private static int wazeLongitude = 32;
+	private static int wazeDistanceToClosShapePoint = 33;
+	private static int wazeIsJamUnifiedAlert = 34;
+	private static int wazeInScale = 35;
+
+	private static int jamUpdateDateTime = 36;
+	private static int jamExpirationDateTime = 37;
+	private static int jamBlockType = 38;
+	private static int jamDelay = 39;
+	private static int jamLength = 40;
+	private static int jamLevel = 41;
+	private static int jamSeverity = 42;
+	private static int jamSpeedKMH = 43;
 
 	private static HashMap<String, HashMap<String, Long>> scheduledHeadwaysMap = new HashMap<String, HashMap<String, Long>>();
 
@@ -230,7 +229,7 @@ public class HeadwayLabeling {
 					}
 				};
 
-				result.mapPartitionsWithIndex(insertHeader, false).saveAsTextFile(output + SLASH + "output_TESTE_" + stringDate);
+				result.mapPartitionsWithIndex(insertHeader, false).saveAsTextFile(output + SLASH + "output_" + stringDate);
 			}
 		}
 	}
@@ -278,7 +277,7 @@ public class HeadwayLabeling {
 						if (!stringSplitted[jamUpdateDateTime].equals("-")) {
 							jam = new JamData(stringSplitted[jamUpdateDateTime], stringSplitted[jamExpirationDateTime], stringSplitted[jamBlockType], 
 									stringSplitted[jamDelay], stringSplitted[jamLength], stringSplitted[jamLevel], stringSplitted[jamSeverity], 
-									stringSplitted[jamSpeedKMH], stringSplitted[jamDistanceToClosShapePoint]);
+									stringSplitted[jamSpeedKMH]);
 						}
 						
 						OutputString integratedData = new OutputString(stringSplitted[gpsRoute], stringSplitted[gpsTripNum], stringSplitted[gpsShapeId],
@@ -391,7 +390,7 @@ public class HeadwayLabeling {
 			}
 		}).groupByKey(minPartitions);
 		
-		 rddBusStopsGrouped.saveAsTextFile(outputPath + SLASH + "scheduled_hd_TESTE_" + stringDate);
+		 rddBusStopsGrouped.saveAsTextFile(outputPath + SLASH + "scheduled_hd_" + stringDate);
 		
 		// Calculate the headway between the buses, considering same route, same stop and same day
 		// Headway: time difference for the bus that is in front
