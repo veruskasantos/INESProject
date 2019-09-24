@@ -60,6 +60,8 @@ public class MatchingGPSWeatherWaze {
 	private static final String SEPARATOR_WEATHER = ";";
 	private static final String SEPARATOR_WAZE = ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)";
 	private static final String SLASH = "/";
+	private static final int ONE_HOUR = 60; //60 minutes
+	private static final int TEN_MINUTES = 10; 
 	//TODO 1 - take only CLOSEST waze data from the streets where buses pass
 	private static Map<String, Tuple2<String, String>> stationCoordinatesMap;
 	private static Map<String, List<Tuple2<String, Double>>> stationDataMap;
@@ -432,11 +434,30 @@ public class MatchingGPSWeatherWaze {
 					
 					if (!streetAlerts.isEmpty()) { // sort alert list by date to get the most recent
 						Collections.sort(streetAlerts);
-						closestAlert = streetAlerts.get(streetAlerts.size()-1);
-						double closestDistanceAlert = GeoPoint.getDistanceInMeters(Double.valueOf(matchingGP3SP.getLatShape()), Double.valueOf(matchingGP3SP.getLonShape()), 
-								Double.valueOf(closestAlert.getAlertLatitude()), Double.valueOf(closestAlert.getAlertLongitude()));
-						closestAlert.setDistanceToClosestShapePoint(String.valueOf(closestDistanceAlert));
-						matchingGP3SP.setAlertData(closestAlert);
+
+						//Get only events that happening at most 1 hour after/before the gps time
+						Long closestTime = Long.MAX_VALUE;
+						for (AlertData alertSameStreet : streetAlerts) {
+							
+							//positivo - alerta enviado depois
+							//negativo - alerta enviado antes
+							long currentDifferenceTime = GeoPoint.getTimeDifference(matchingGP3SP.getTimestamp(), alertSameStreet.getAlertTime()); //check the abs value
+							if (Math.abs(currentDifferenceTime) < closestTime && ((currentDifferenceTime <= 0 && Math.abs(currentDifferenceTime) < ONE_HOUR) ||
+									(currentDifferenceTime > 0 && Math.abs(currentDifferenceTime) < TEN_MINUTES))) {
+								closestTime = Math.abs(currentDifferenceTime);
+								closestAlert = alertSameStreet;
+							}
+						}
+						//
+						
+//						closestAlert = streetAlerts.get(streetAlerts.size()-1);
+						
+						if (closestAlert != null) {
+							double closestDistanceAlert = GeoPoint.getDistanceInMeters(Double.valueOf(matchingGP3SP.getLatShape()), Double.valueOf(matchingGP3SP.getLonShape()), 
+									Double.valueOf(closestAlert.getAlertLatitude()), Double.valueOf(closestAlert.getAlertLongitude()));
+							closestAlert.setDistanceToClosestShapePoint(String.valueOf(closestDistanceAlert));
+							matchingGP3SP.setAlertData(closestAlert);
+						}
 					}
 					
 					//hour:date
@@ -534,8 +555,23 @@ public class MatchingGPSWeatherWaze {
 					
 					if (!streetJams.isEmpty()) { // sort alert list by date to get the most recent
 						Collections.sort(streetJams);
-						closestJam = streetJams.get(streetJams.size()-1);
-						matchingGP3SP.setJamData(closestJam);
+						
+						//Get only events that happening at most 1 hour after/before the gps time
+						Long closestTime = Long.MAX_VALUE;
+						for (JamData jamSameStreet : streetJams) {
+							long currentDifferenceTime = Math.abs(GeoPoint.getTimeDifference(matchingGP3SP.getTimestamp(), jamSameStreet.getJamUpdateTime())); //check the abs value
+							if (currentDifferenceTime < closestTime && currentDifferenceTime < ONE_HOUR) {
+								closestTime = currentDifferenceTime;
+								closestJam = jamSameStreet;
+							}
+						}
+						//
+					
+//							closestJam = streetJams.get(streetJams.size()-1);
+						
+						if (closestJam != null) {
+							matchingGP3SP.setJamData(closestJam);
+						}
 					}
 					
 					output = matchingGP3SP.getIntegratedOutputString();
