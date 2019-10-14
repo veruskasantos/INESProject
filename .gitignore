@@ -5,4 +5,4 @@ data/
 .RData
 .Ruserdata
 .recommenders/
-.pkl
+*.pkl
