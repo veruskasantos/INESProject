@@ -176,12 +176,12 @@ public class MergeGTFSFiles {
 			while ((lineShapes = brShapes.readLine()) != null) {
 
 				String[] data = lineShapes.replace("\"", "").split(FILE_SEPARATOR);
-				String shapeId = data[0];
+				String shapeId = data[1];
 				String routeId = mapShapeRouteId.get(shapeId);
 				String routeCode = null;
 				
-				double lat = Double.valueOf(data[1]);
-				double lng = Double.valueOf(data[2]);
+				double lat = Double.valueOf(data[2]);
+				double lng = Double.valueOf(data[3]);
 				String streetName = getStreetNameHERE(lat, lng);
 				
 				if (routeId == null) {

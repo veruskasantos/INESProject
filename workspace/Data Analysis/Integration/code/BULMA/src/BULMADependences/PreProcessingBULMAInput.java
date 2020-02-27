@@ -5,8 +5,14 @@ import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Filter GPS data to bus.code, latitude, longitude, timestamp, line.code, gps.id
@@ -25,8 +31,9 @@ public class PreProcessingBULMAInput {
 	
 	/**
 	 * Filter columns, generate id for each gps point and sort data
+	 * @throws ParseException 
 	 */
-	public static void filterGPSData(String filePath, String city) {
+	public static void filterGPSData(String filePath, String city) throws ParseException {
 		List<String> gpsData = readDataFromCSV(filePath);
 		List<String> filteredGPSData;
 		String newFilePath; // the final gps name should be preprocessed_<date>.csv
@@ -37,7 +44,12 @@ public class PreProcessingBULMAInput {
 			
 		} else if (city.equals("Curitiba")) {
 			filteredGPSData = filterGPSDataCuritiba(gpsData);
-			newFilePath = filePath.substring(0, filePath.lastIndexOf("/")) + "/preprocessed_" + filePath.substring(filePath.lastIndexOf("/")+1, filePath.lastIndexOf("_veiculos")).replace("_", "-") + ".csv";
+			
+			String fileName = filePath.substring(filePath.lastIndexOf("/")+1);
+			String stringFileDate = subtractDay(fileName.substring(0, fileName.lastIndexOf("_veiculos")));
+			
+			newFilePath = filePath.substring(0, filePath.lastIndexOf("/")) + "/preprocessed_" + stringFileDate.replace("_", "-") + ".csv";
+			//newFilePath = filePath.substring(0, filePath.lastIndexOf("/")) + "/preprocessed_" + filePath.substring(filePath.lastIndexOf("/")+1, filePath.lastIndexOf("_veiculos")).replace("_", "-") + ".csv";
 			
 		} else {
 			filteredGPSData = filterGPSDataCG(gpsData);
@@ -167,5 +179,30 @@ public class PreProcessingBULMAInput {
 		} 
 		
 		System.out.println("Saving new file. Lines: " + data.size());
+	}
+	
+	/**
+	 * Gets the previous date based on date passed as parameter
+	 * 
+	 * @param stringDate
+	 * 	The current date
+	 * @return
+	 * 	The previous date
+	 * @throws ParseException
+	 */
+	public static String subtractDay(String stringDate) throws ParseException {
+
+		DateFormat targetFormat = new SimpleDateFormat("yyyy_MM_dd", Locale.ENGLISH);
+		Date date = targetFormat.parse(stringDate);
+		
+	    Calendar cal = Calendar.getInstance();
+	    cal.setTime(date);
+	    cal.add(Calendar.DAY_OF_MONTH, -1);
+	    
+	    DateFormat originalFormat = new SimpleDateFormat("EEE MMM dd kk:mm:ss z yyyy", Locale.ENGLISH);
+	    Date newDate = originalFormat.parse(cal.getTime().toString());
+	    String formattedDate = targetFormat.format(newDate).replace("_", "-"); 
+	    
+	    return formattedDate;
 	}
 }

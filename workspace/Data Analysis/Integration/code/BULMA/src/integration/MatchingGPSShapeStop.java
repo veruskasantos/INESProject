@@ -7,14 +7,12 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
 import java.util.StringTokenizer;
@@ -138,20 +136,16 @@ public class MatchingGPSShapeStop {
 				
 				// Get the day of analysis. Curitiba data are saved one day after.
 				String stringFileDate;
-				String correctDate;
 				if (city.equals("CampinaGrande")) {
 					stringFileDate = fileName.substring(18, fileName.lastIndexOf(".csv"));
-					correctDate = stringFileDate;
 				} else if (city.equals("Recife")) {
 					stringFileDate = fileName.substring(fileName.lastIndexOf("_")+1, fileName.lastIndexOf(".csv"));
-					correctDate = stringFileDate;
 				} else {
-					stringFileDate = subtractDay(fileName.substring(0, fileName.lastIndexOf("_veiculos")));
-					correctDate = fileName.substring(fileName.lastIndexOf("_"), fileName.lastIndexOf(".csv"));
+					stringFileDate = PreProcessingBULMAInput.subtractDay(fileName.substring(0, fileName.lastIndexOf("_veiculos")));
 				}
 				
 				JavaRDD<String> rddOutputBuLMABusTE = executeBULMA(pathFileShapes, pathGPSFiles + "preprocessed_" + stringFileDate + ".csv", 
-						busStopsFile, correctDate, minPartitions, context, city);
+						busStopsFile, stringFileDate, minPartitions, context, city);
 
 				/**
 				 * Inserts a header into each output file
@@ -1360,28 +1354,4 @@ public class MatchingGPSShapeStop {
 		return rddBulmaBusteOutput;
 	}
 	
-	/**
-	 * Gets the previous date based on date passed as parameter
-	 * 
-	 * @param stringDate
-	 * 	The current date
-	 * @return
-	 * 	The previous date
-	 * @throws ParseException
-	 */
-	public static String subtractDay(String stringDate) throws ParseException {
-
-		DateFormat targetFormat = new SimpleDateFormat("yyyy_MM_dd", Locale.ENGLISH);
-		Date date = targetFormat.parse(stringDate);
-		
-	    Calendar cal = Calendar.getInstance();
-	    cal.setTime(date);
-	    cal.add(Calendar.DAY_OF_MONTH, -1);
-	    
-	    DateFormat originalFormat = new SimpleDateFormat("EEE MMM dd kk:mm:ss z yyyy", Locale.ENGLISH);
-	    Date newDate = originalFormat.parse(cal.getTime().toString());
-	    String formattedDate = targetFormat.format(newDate).replace("_", "-"); 
-	    
-	    return formattedDate;
-	}
 }
