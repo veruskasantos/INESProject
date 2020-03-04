@@ -1,7 +1,9 @@
 For each city, run:
 
 1.PRE-PROCESSING
+
 GPS
+
 Recife
 - Separate files per day
 - Convert coordinates
@@ -34,8 +36,11 @@ GPS/GTFS
 - Generate shapes_STREET
 
 -> Run MergeGTFSFiles
+
 -> Run MatchingGPSShapeStop
+
 -> Run MatchingGPSWeatherWaze
+
 -> Run HeawayLabeling
 
 
@@ -44,6 +49,7 @@ GPS/GTFS
 - Normalize all data
 
 -> Run
+
 -> Run
 
 
