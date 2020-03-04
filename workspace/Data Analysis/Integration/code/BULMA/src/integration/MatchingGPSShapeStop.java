@@ -81,7 +81,7 @@ public class MatchingGPSShapeStop {
 	private static final String OUTPUT_HEADER = "route,tripNum,shapeId,routeFrequency,shapeSequence,shapeLat,shapeLon,distanceTraveledShape,"
 			+ "busCode,gpsPointId,gpsLat,gpsLon,distanceToShapePoint,gps_datetime,stopPointId,streetName,problem";
 
-	public static void main(String[] args) throws IOException, URISyntaxException, ParseException {
+	public final static void main(String[] args) throws IOException, URISyntaxException, ParseException {
 
 		if (args.length < 4) {
 			System.err.println(
@@ -977,7 +977,7 @@ public class MatchingGPSShapeStop {
 			public Tuple2<String, Object> call(String busStopsString) throws Exception {
 				String[] splittedEntry = busStopsString.split(FILE_SEPARATOR);
 				// shapeID , shapeSequence + '.' + stopId
-				return new Tuple2<String, Object>(splittedEntry[7], splittedEntry[8] + "." + splittedEntry[2]);
+				return new Tuple2<String, Object>(splittedEntry[8], splittedEntry[9] + "." + splittedEntry[3]);
 			}
 		});
 		

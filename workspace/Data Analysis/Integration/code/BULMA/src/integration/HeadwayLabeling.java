@@ -4,8 +4,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -119,8 +123,9 @@ public class HeadwayLabeling {
 	private static int jamSpeedKMH = 43;
 
 	private static HashMap<String, HashMap<String, Long>> scheduledHeadwaysMap = new HashMap<String, HashMap<String, Long>>();
-
-	public static void main(String[] args) throws IOException, URISyntaxException, ParseException {
+	private static List<String> servicesList = new ArrayList<>();
+	
+	public final static void main(String[] args) throws IOException, URISyntaxException, ParseException {
 
 		if (args.length < 5) {
 			System.err.println("Usage: <city> <integrated data directory> <GTFS path> <output path> <number of partitions>");
@@ -133,6 +138,7 @@ public class HeadwayLabeling {
 		String busteOutputPath = args[1] + city + "/";
 		String GTFSFilePath = args[2] + city + "/";
 		String stopTimesShapesPath = GTFSFilePath + "stop_times_shapes.txt";
+		String calendarPath = GTFSFilePath + "calendar.txt";
 		String outputPath = args[3] + city + "/";
 		final Integer minPartitions = Integer.valueOf(args[4]);
 
@@ -140,7 +146,7 @@ public class HeadwayLabeling {
 		// SparkConf sparkConf = new SparkConf().setAppName("HeadwayLabeling"); // to run on cluster
 		JavaSparkContext context = new JavaSparkContext(sparkConf);
 
-		generateOutputFilesHDFS(context, busteOutputPath, stopTimesShapesPath, outputPath, city, minPartitions);
+		generateOutputFilesHDFS(context, busteOutputPath, stopTimesShapesPath, calendarPath, outputPath, city, minPartitions);
 
 		context.stop();
 		context.close();
@@ -148,7 +154,7 @@ public class HeadwayLabeling {
 	}
 
 	private static void generateOutputFilesHDFS(JavaSparkContext context, String pathBusteOutput, String stopTimesShapesPath,
-			String output, String city, int minPartitions) throws IOException, URISyntaxException, ParseException {
+			String calendarPath, String output, String city, int minPartitions) throws IOException, URISyntaxException, ParseException {
 
 		/**
 		 * Removes empty lines and header from file
@@ -208,7 +214,7 @@ public class HeadwayLabeling {
 
 				String stringDate = dirName.substring(dirName.lastIndexOf("_") + 1, dirName.length());
 
-				JavaRDD<String> result = execute(context, busteOutputString, stopTimesShapesPath, output, stringDate, city, minPartitions);
+				JavaRDD<String> result = execute(context, busteOutputString, stopTimesShapesPath, calendarPath, output, stringDate, city, minPartitions);
 
 				/**
 				 * Inserts a header into each output file
@@ -236,7 +242,7 @@ public class HeadwayLabeling {
 
 	@SuppressWarnings("serial")
 	private static JavaRDD<String> execute(JavaSparkContext context, JavaRDD<String> busteOutputString,
-			String stopTimesShapesPath, String outputPath, String stringDate, final String city, int minPartitions) {
+			String stopTimesShapesPath, String calendarPath, String outputPath, String stringDate, final String city, int minPartitions) {
 		
 		Function2<Integer, Iterator<String>, Iterator<String>> removeHeader = new Function2<Integer, Iterator<String>, Iterator<String>>() {
 
@@ -303,13 +309,14 @@ public class HeadwayLabeling {
 
 			public Tuple2<String, String> call(String busStopsString) throws Exception {
 				String[] splittedEntry = busStopsString.split(SEPARATOR);
-				String route = splittedEntry[6].replace(" ", "");
-				String shapeID = splittedEntry[7].replace(" ", "");
-				String stopID = splittedEntry[2].replace(" ", "");
-				String arrivalTime = splittedEntry[0].replace(" ", "");
+				String route = splittedEntry[7].replace(" ", "");
+				String shapeID = splittedEntry[8].replace(" ", "");
+				String stopID = splittedEntry[3].replace(" ", "");
+				String arrivalTime = splittedEntry[1].replace(" ", "");
+				String serviceId = splittedEntry[0];
 				
 				// route:stopId
-				return new Tuple2<String, String>(route + ":" + shapeID + ":" + stopID, arrivalTime);
+				return new Tuple2<String, String>(route + ":" + shapeID + ":" + stopID + ":" + serviceId, arrivalTime);
 			}
 		}).groupByKey(minPartitions);
 		
@@ -326,10 +333,11 @@ public class HeadwayLabeling {
 			@Override
 			public Tuple2<String, Tuple2<String, List<Tuple2<String, Long>>>> call(Tuple2<String, Iterable<String>> routeStopID_arrivalTimes) 
 					throws Exception {
-				String routeShapeStopIDKey = routeStopID_arrivalTimes._1; // route:stopId
+				String routeShapeStopServiceIDKey = routeStopID_arrivalTimes._1; // route:shapeId:stopId:serviceId
 				
 				//arrivalTimes-headway
 				List<Tuple2<String, Long>> arrivalTimesHeadwayMap = new ArrayList<>();
+				List<String> arrivalTimesList =  Lists.newArrayList(routeStopID_arrivalTimes._2);
 				
 				// GTFS of Recife is out of date, there is not 2018 date in calendar file
 				// So we will remove duplicate times
@@ -339,58 +347,64 @@ public class HeadwayLabeling {
 					for (String arrivalTime : routeStopID_arrivalTimes._2) {
 						arrivalTimesSet.add(arrivalTime);
 					}
-					List<String> arrivalTimesList =  new ArrayList<String>(arrivalTimesSet);
-					Collections.sort(arrivalTimesList);
-					
-					for (int i = 0; i < arrivalTimesList.size()-2; i++) {
-						String firstArrival = arrivalTimesList.get(i);
-						String secondArrival = arrivalTimesList.get(i+1);
-						long headway = GeoPoint.getTimeDifference(firstArrival, secondArrival); //in minutes
-						String firstArrivalSecondArrivalKey = firstArrival.replaceAll(":", "") + "_" + secondArrival.replaceAll(":", "");
-						
-						arrivalTimesHeadwayMap.add(new Tuple2<String, Long>(firstArrivalSecondArrivalKey, headway));
-						
-						if (!scheduledHeadwaysMap.containsKey(routeShapeStopIDKey)) {
-							scheduledHeadwaysMap.put(routeShapeStopIDKey, new HashMap<String,Long>());
-						}
-						scheduledHeadwaysMap.get(routeShapeStopIDKey).put(firstArrivalSecondArrivalKey, headway); //firstArrivalTime_secondArrivalTime
-					}
-					
-					if (arrivalTimesList.size() == 2) {
-						String firstArrival = arrivalTimesList.get(0);
-						String secondArrival = arrivalTimesList.get(1);
-						long headway = GeoPoint.getTimeDifference(firstArrival, secondArrival);
-						String firstArrivalSecondArrivalKey = firstArrival.replaceAll(":", "") + "_" + secondArrival.replaceAll(":", "");
-						
-						arrivalTimesHeadwayMap.add(new Tuple2<String, Long>(firstArrivalSecondArrivalKey, headway));
-						
-						if (!scheduledHeadwaysMap.containsKey(routeShapeStopIDKey)) {
-							scheduledHeadwaysMap.put(routeShapeStopIDKey, new HashMap<String,Long>());
-						}
-						scheduledHeadwaysMap.get(routeShapeStopIDKey).put(firstArrivalSecondArrivalKey, headway); //firstArrivalTime_secondArrivalTime
-					}
-					
-					String routeShapeKey = routeShapeStopIDKey.split(":")[0] + ":" + routeShapeStopIDKey.split(":")[1];
-					
-					return new Tuple2<String, Tuple2<String,List<Tuple2<String, Long>>>>(routeShapeKey, 
-							new Tuple2<String,List<Tuple2<String, Long>>>(routeShapeStopIDKey.split(":")[2],  arrivalTimesHeadwayMap));
-					
-				} else {
-					//TODO update code to deal with service (same arrival times for different days)
-					//manter o trip_id e service em stop_t_s (merge file)
-					//pegar o service and trip, olhar em calendar e add a data em stop_t_s (merge file)
-					//adicionar a data na chave (aqui)
-					//calcular o headway com mesma data
-					//ao comparar, ver se está na data
-					
-					//List<String> arrivalTimesList =  Lists.newArrayList(routeStopID_arrivalTimes._2);
-					
-					return null;
+					arrivalTimesList =  new ArrayList<String>(arrivalTimesSet);
 				}
+				
+				Collections.sort(arrivalTimesList);
+				
+				for (int i = 0; i < arrivalTimesList.size()-2; i++) {
+					String firstArrival = arrivalTimesList.get(i);
+					String secondArrival = arrivalTimesList.get(i+1);
+					long headway = GeoPoint.getTimeDifference(firstArrival, secondArrival); //in minutes
+					String firstArrivalSecondArrivalKey = firstArrival.replaceAll(":", "") + "_" + secondArrival.replaceAll(":", "");
+					
+					arrivalTimesHeadwayMap.add(new Tuple2<String, Long>(firstArrivalSecondArrivalKey, headway));
+					
+					if (!scheduledHeadwaysMap.containsKey(routeShapeStopServiceIDKey)) {
+						scheduledHeadwaysMap.put(routeShapeStopServiceIDKey, new HashMap<String,Long>());
+					}
+					scheduledHeadwaysMap.get(routeShapeStopServiceIDKey).put(firstArrivalSecondArrivalKey, headway); //firstArrivalTime_secondArrivalTime
+				}
+				
+				if (arrivalTimesList.size() == 2) {
+					String firstArrival = arrivalTimesList.get(0);
+					String secondArrival = arrivalTimesList.get(1);
+					long headway = GeoPoint.getTimeDifference(firstArrival, secondArrival);
+					String firstArrivalSecondArrivalKey = firstArrival.replaceAll(":", "") + "_" + secondArrival.replaceAll(":", "");
+					
+					arrivalTimesHeadwayMap.add(new Tuple2<String, Long>(firstArrivalSecondArrivalKey, headway));
+					
+					if (!scheduledHeadwaysMap.containsKey(routeShapeStopServiceIDKey)) {
+						scheduledHeadwaysMap.put(routeShapeStopServiceIDKey, new HashMap<String,Long>());
+					}
+					scheduledHeadwaysMap.get(routeShapeStopServiceIDKey).put(firstArrivalSecondArrivalKey, headway); //firstArrivalTime_secondArrivalTime
+				}
+				
+				String routeShapeKey = routeShapeStopServiceIDKey.split(":")[0] + ":" + routeShapeStopServiceIDKey.split(":")[1];
+				String stopServiceKey = routeShapeStopServiceIDKey.split(":")[2] + ":" + routeShapeStopServiceIDKey.split(":")[3];
+				
+				return new Tuple2<String, Tuple2<String,List<Tuple2<String, Long>>>>(routeShapeKey, 
+						new Tuple2<String,List<Tuple2<String, Long>>>(stopServiceKey,  arrivalTimesHeadwayMap));
 			}
+			
 		}).groupByKey(minPartitions);
 		
 		 rddBusStopsGrouped.saveAsTextFile(outputPath + SLASH + "scheduled_hd_" + stringDate);
+		 
+		 JavaRDD<String> servicesString = context.textFile(calendarPath, minPartitions)
+					.mapPartitionsWithIndex(removeHeader, false);
+			
+		// Calendar services saved in the list
+		JavaPairRDD<String, Iterable<String>> rddServices = servicesString.mapToPair(new PairFunction<String, String, String>() {
+
+			public Tuple2<String, String> call(String servicesString) throws Exception {
+				servicesList.add(servicesString);
+				
+				return new Tuple2<String, String>("", servicesString);
+			}
+		}).groupByKey(minPartitions);
+		
+		rddServices.saveAsTextFile(outputPath + SLASH + "services_" + stringDate);
 		
 		// Calculate the headway between the buses, considering same route, same stop and same day
 		// Headway: time difference for the bus that is in front
@@ -443,8 +457,36 @@ public class HeadwayLabeling {
 								String[] secondBusTimeSplit = closestNextBus.getTimestamp().split(":");
 								int secondBusTime =  Integer.valueOf(secondBusTimeSplit[0] + secondBusTimeSplit[1] 
 										+ secondBusTimeSplit[2]);
-	
-								HashMap<String, Long> arrivalTimesHeadwayMap = scheduledHeadwaysMap.get(routeShapeStopID);
+								
+								String gpsDate = currentBusteOutput.getGps_datetime().split(" ")[0];
+								int dayOfWeek;
+								int serviceID = 1;
+								try {
+							        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+							        Date date = format.parse(gpsDate);
+							        Calendar cal = GregorianCalendar.getInstance();
+							        cal.setTime(date);
+							        
+							        dayOfWeek = cal.get(Calendar.DAY_OF_WEEK) -1;
+							        if (dayOfWeek==0) {//saturday
+							        	dayOfWeek=7;
+							        }
+							        for (String service : servicesList) {
+										String[] values = service.split(SEPARATOR);
+										int serviceDayOfWeek = Integer.valueOf(values[dayOfWeek]);
+										int serviceDate = Integer.valueOf(values[values.length-1]);
+										int gpsDateNumber = Integer.valueOf(gpsDate.replace("-", ""));
+										if (serviceDayOfWeek == 1 && gpsDateNumber <= serviceDate) { //considering only scheduled headway updated
+											serviceID = Integer.valueOf(values[0]);
+											break;
+										}
+									}
+							    }
+							    catch(Exception e) {
+							        e.printStackTrace();
+							    }
+								
+								HashMap<String, Long> arrivalTimesHeadwayMap = scheduledHeadwaysMap.get(routeShapeStopID + ":" + serviceID);
 								
 								// When there is only one bus in the route (specially)
 								if (arrivalTimesHeadwayMap != null) {

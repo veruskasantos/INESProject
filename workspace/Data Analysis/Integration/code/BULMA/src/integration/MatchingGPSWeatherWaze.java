@@ -104,7 +104,7 @@ public class MatchingGPSWeatherWaze {
 	private static int jamExpirationDateTime = 21;
 	private static int jamBlockType = 23;
 	
-	public static void main(String[] args) throws IOException, URISyntaxException, ParseException {
+	public final static void main(String[] args) throws IOException, URISyntaxException, ParseException {
 
 		if (args.length < 6) {
 			System.err.println("Usage: <city> <output matchingGSS directory> <precipitation path> <waze path> <output path> <number of partitions>");
