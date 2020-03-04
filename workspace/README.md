@@ -43,12 +43,13 @@ GPS/GTFS
 
 -> Run HeawayLabeling
 
+Add outputs folder in Data Analysis/data/output/<city>/
 
 3. FEATURE ENGINEERING
 - Generate new feats
 - Normalize all data
 
--> Run
+-> Run Feature_Engineering
 
 -> Run
 
