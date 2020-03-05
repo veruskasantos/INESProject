@@ -51,10 +51,12 @@ Add outputs folder in Data Analysis/data/output/<city>/
 
 -> Run Feature_Engineering
 
--> Run
+-> Run Converting_Data
 
 
 3. PREDICTION
+- Separate data by days
 - Make bus bunching predictions
 
--> Run
+-> Run Data
+-> Run models
