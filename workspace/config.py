@@ -2,6 +2,8 @@
 
 pip3 install numpy
 pip3 install pandas
+# pip3 install pandas-profiling
+pip3 install featuretools
 pip3 install xgboost
 pip3 install catboost
 pip3 install https://github.com/JamesRitchie/scikit-rvm/archive/master.zip
