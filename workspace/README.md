@@ -14,8 +14,8 @@ Curitiba
 
 
 WAZE
-- Remove lines from different city
 - Order files fields
+- Remove lines from different city
 
 
 WEATHER
