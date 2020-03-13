@@ -323,11 +323,11 @@ public class MatchingGPSWeatherWaze {
 						
 						//Comparing just with the same hour, because possible border errors are at most one
 						List<Tuple2<String, Double>> listTimes = stationDataMap.get(stationGPSTimeCurrent);
-						
-						if (listTimes == null) { //when there is no data for current time, consider next time or before time
-							int otherTime = currentHour + 1;
+						int otherTime = currentHour;
+						while (listTimes == null) { //when there is no data for current time, consider next time or before time
+							otherTime++;
 							if (otherTime == 24) {
-								otherTime = currentHour - 1;
+								otherTime--;
 							}
 							String stationGPSNextTime = closestStation + "_" + otherTime;
 							listTimes = stationDataMap.get(stationGPSNextTime);
@@ -340,6 +340,7 @@ public class MatchingGPSWeatherWaze {
 							long currentDifferenceTime = Math.abs(GeoPoint.getTimeDifference(timeGP3S, timeKey.split(" ")[1])); //check the abs value
 							if (currentDifferenceTime < closestTime) {
 								closestTimePrecipitation = new Tuple2<String, Double>(timeKey, precipitation);
+								closestTime = currentDifferenceTime;
 							}
 						}
 						
@@ -347,7 +348,6 @@ public class MatchingGPSWeatherWaze {
 						matchingGP3S.setPrecipitationTime(closestTimePrecipitation._1.split(" ")[1]);
 						matchingGP3S.setPrecipitationDateTime(closestTimePrecipitation._1);
 						matchingGP3S.setPrecStationDistanceToGPS(closestDistance);
-						
 						
 						String latLonKey = String.valueOf(matchingGP3S.getLatShape()).replace(" ",  "").substring(0, 4) + ":" + String.valueOf(matchingGP3S.getLonShape()).replace(" ",  "").substring(0, 5);
 
@@ -374,6 +374,7 @@ public class MatchingGPSWeatherWaze {
 				} catch (ArrayIndexOutOfBoundsException e) {
 					//road type empty
 				}
+				
 				AlertData alert = new AlertData(splittedEntry[wazeId], splittedEntry[wazeConfidence], splittedEntry[wazeInScale], 
 						splittedEntry[wazeIsJamUnifiedAlert], splittedEntry[wazeLocation], splittedEntry[wazeNComments], splittedEntry[wazeNImages], 
 						splittedEntry[wazeNThumbsUp], splittedEntry[wazePublicationTime], splittedEntry[wazeReliability], splittedEntry[wazeReportDescription], 
