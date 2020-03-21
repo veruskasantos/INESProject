@@ -10,9 +10,15 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import PointDependencies.GPSPoint;
 
 /**
  * Filter GPS data to bus.code, latitude, longitude, timestamp, line.code, gps.id
@@ -28,6 +34,7 @@ import java.util.Locale;
 public class PreProcessingBULMAInput {
 	
 	private static final String DELIMITER = ",";
+	private static Map<String, List<GPSPoint>> mapBusData;
 	
 	/**
 	 * Filter columns, generate id for each gps point and sort data
@@ -86,7 +93,7 @@ public class PreProcessingBULMAInput {
 		return filteredGPSData;
 	}
 	
-	private static List<String> filterGPSDataCuritiba(List<String> gpsData) {
+	/*private static List<String> filterGPSDataCuritiba(List<String> gpsData) {
 //		bus_code, lat, lon, timestamp, route
 
 		List<String> filteredGPSData = new ArrayList<String>();
@@ -104,6 +111,53 @@ public class PreProcessingBULMAInput {
 			String newLine = busCode + DELIMITER + latitude + DELIMITER + longitude + DELIMITER + 
 					timestamp + DELIMITER + route + DELIMITER + gpsID;
 			filteredGPSData.add(newLine);
+		}
+		
+		return filteredGPSData;
+	}*/
+	
+	private static List<String> filterGPSDataCuritiba(List<String> gpsData) {
+//		bus_code, lat, lon, timestamp, route
+
+		mapBusData = new HashMap<>();
+		
+		for (String gpsLine : gpsData) {
+			String[] attributes = gpsLine.split(DELIMITER);
+			String busCode = attributes[0];
+			String latitude = attributes[1];
+			String longitude = attributes[2];
+			String timestamp = attributes[3].split(" ")[1]; // to get just the time
+			String route = attributes[4];
+			
+			GPSPoint gpsPoint = new GPSPoint(busCode, latitude, longitude, timestamp, route);
+			
+			if (!mapBusData.containsKey(busCode)) {
+				mapBusData.put(busCode, new ArrayList<GPSPoint>());
+			}
+			
+			mapBusData.get(busCode).add(gpsPoint); // grouping by busCode
+		}
+		
+		return sortGPSdataCuritiba();
+	}
+	
+	private static List<String> sortGPSdataCuritiba() {
+		
+		List<String> filteredGPSData = new ArrayList<String>();
+		
+		for (Entry<String, List<GPSPoint>> busCode_data : mapBusData.entrySet()) {
+			List<GPSPoint> busData = busCode_data.getValue();
+			
+			Collections.sort(busData); // Curitiba data is in descendent order
+			
+			int gpsIDCount = 0;
+			for (GPSPoint gpsLine : busData) {
+				int gpsID = ++gpsIDCount;
+				
+				String newLine = gpsLine.getBusCode() + DELIMITER + gpsLine.getLatitude() + DELIMITER + gpsLine.getLongitude() + 
+						DELIMITER +	gpsLine.getTimeStamp() + DELIMITER + gpsLine.getLineCode() + DELIMITER + gpsID;
+				filteredGPSData.add(newLine);
+			}
 		}
 		
 		return filteredGPSData;

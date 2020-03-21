@@ -56,10 +56,36 @@ public class ShapePoint extends GeoPoint {
 				st.nextToken().replace("\"", ""), 
 				st.nextToken().replace("\"", ""));
 	}
-
+	
+	public static ShapePoint createShapePointRoute(String line, String city) {
+		StringTokenizer st = new StringTokenizer(line, ",");
+		
+		String route = st.nextToken().replace("\"", "");
+		
+		if (city.equals("Curitiba")) {
+			st.nextToken();
+		}
+		
+		String id = st.nextToken().replace("\"", "");
+		String latitude = st.nextToken().replace("\"", "");
+		String longitude = st.nextToken().replace("\"", "");
+		String pointSequence = st.nextToken().replace("\"", "");
+		String distanceTraveled = st.nextToken().replace("\"", "");
+		String routeFrequency = st.nextToken().replace("\"", "");
+		String streetName;
+		
+		try {
+			streetName = st.nextToken().replace("\"", "");
+			
+		} catch (Exception e) { // when there is no street name
+			streetName = "";
+		}
+		
+		return new ShapePoint(route, id, latitude, longitude, pointSequence, distanceTraveled, routeFrequency, streetName);
+	}
+	
 	public static ShapePoint createShapePointRoute(String line) {
 		StringTokenizer st = new StringTokenizer(line, ",");
-//		System.out.println(line);
 		
 		String route = st.nextToken().replace("\"", "");
 		String id = st.nextToken().replace("\"", "");

@@ -168,7 +168,6 @@ public class MatchingGPSShapeStop {
 
 				rddOutputBuLMABusTE.mapPartitionsWithIndex(insertHeader, false)
 						.saveAsTextFile(outputPath + SLASH + "BuLMABusTE_" + stringFileDate);
-				
 			}
 		}
 	}
@@ -191,7 +190,7 @@ public class MatchingGPSShapeStop {
 
 		JavaRDD<String> gpsString = ctx.textFile(pathGPSFile, minPartitions).mapPartitionsWithIndex(removeHeader,
 				false);
-		JavaRDD<String> shapeString = ctx.textFile(pathFileShapes + "shapes.csv", minPartitions).mapPartitionsWithIndex(removeHeader,
+		JavaRDD<String> shapeString = ctx.textFile(pathFileShapes + "shapesSTREET.csv", minPartitions).mapPartitionsWithIndex(removeHeader,
 				false);
 
 		JavaPairRDD<String, Iterable<GeoPoint>> rddGPSPointsPair = gpsString
@@ -209,7 +208,8 @@ public class MatchingGPSShapeStop {
 				.mapToPair(new PairFunction<String, String, GeoPoint>() {
 
 					public Tuple2<String, GeoPoint> call(String s) throws Exception {
-						ShapePoint shapePoint = ShapePoint.createShapePointRoute(s);
+						ShapePoint shapePoint = ShapePoint.createShapePointRoute(s, city);
+						
 						return new Tuple2<String, GeoPoint>(shapePoint.getId(), shapePoint);
 					}
 				}).groupByKey(minPartitions);
@@ -318,7 +318,7 @@ public class MatchingGPSShapeStop {
 						String route = lastPoint.getRoute();
 						GeoLine geoLine = new ShapeLine(pair._1, lineString, distanceTraveled, lineBlockingKey,
 								listGeoPoint, route, greaterDistance);
-
+						
 						return new Tuple2<String, Object>(lineBlockingKey, geoLine);
 					}
 				});
@@ -903,7 +903,6 @@ public class MatchingGPSShapeStop {
 
 									stringOutput += Problem.NO_SHAPE.getCode();
 									listOutput.add(stringOutput);
-
 								}
 							}
 
@@ -982,7 +981,7 @@ public class MatchingGPSShapeStop {
 		});
 		
 		
-		// Grouping BULMA output by busCode-tripNum-shapeID
+		// Grouping BULMA output by busCode-tripNum-shapeID, creating BulmaBusteOutput
 		JavaPairRDD<String, Iterable<BulmaBusteOutput>> rddBulmaOutputGrouped = rddBulmaOutput
 				.mapToPair(new PairFunction<String, String, BulmaBusteOutput>() {
 
@@ -1014,7 +1013,7 @@ public class MatchingGPSShapeStop {
 						Collections.sort(listBulmaOutput);
 						
 						for (BulmaBusteOutput bulmaOutput : listBulmaOutput) {
-							mapOutputGrouping.put(bulmaOutput.getShapeSequence(), bulmaOutput);
+							mapOutputGrouping.put(bulmaOutput.getShapeSequence(), bulmaOutput); //Map: shapeSequence-GPSdata
 						}
 
 						return new Tuple2<String, Object>(codeTripShapeKey, new BulmaOutputGrouping(mapOutputGrouping));
@@ -1155,6 +1154,7 @@ public class MatchingGPSShapeStop {
 										nextPoint = new Tuple2<Float, String>(
 												currentShapePoint.getDistanceTraveled(), currentTimestamp);
 
+										//interpolation
 										generateOutputFromPointsInBetween(currentShapeId, tripNum, previousPoint,
 												pointsBetweenGPS, nextPoint, shapeLine.getListGeoPoints(), busCode,
 												listOutput, stringDate);
@@ -1256,6 +1256,7 @@ public class MatchingGPSShapeStop {
 						String lonShape;
 						String route;
 						String streetName;
+						
 						for (Integer indexPointsInBetween : pointsBetweenGPS) {
 
 							currentDistanceTraveled = ((ShapePoint) listGeoPointsShape.get(indexPointsInBetween)).getDistanceTraveled()

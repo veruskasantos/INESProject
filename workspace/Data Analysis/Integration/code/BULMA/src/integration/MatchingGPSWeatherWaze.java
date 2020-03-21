@@ -567,7 +567,6 @@ public class MatchingGPSWeatherWaze {
 							}
 						}
 						//
-					
 //							closestJam = streetJams.get(streetJams.size()-1);
 						
 						if (closestJam != null) {
