@@ -186,8 +186,6 @@ public class MatchingGPSWeatherWaze {
 							&& !filePart.getPath().getName().equals("part-00000")) {
 						matchingGSSOutputString = matchingGSSOutputString
 								.union(context.textFile(dailyPathDir + SLASH + filePart.getPath().getName()));
-
-						System.out.println(dailyPathDir + SLASH + filePart.getPath().getName());
 					}
 				}
 				matchingGSSOutputString = matchingGSSOutputString.mapPartitionsWithIndex(removeEmptyLinesAndHeader, false);
@@ -229,10 +227,8 @@ public class MatchingGPSWeatherWaze {
 			public Iterator<String> call(Integer index, Iterator<String> iterator) throws Exception {
 				if (index == 0 && iterator.hasNext()) {
 					iterator.next();
-					return iterator;
-				} else {
-					return iterator;
 				}
+					return iterator;
 			}
 		};
 		
@@ -324,11 +320,16 @@ public class MatchingGPSWeatherWaze {
 						//Comparing just with the same hour, because possible border errors are at most one
 						List<Tuple2<String, Double>> listTimes = stationDataMap.get(stationGPSTimeCurrent);
 						int otherTime = currentHour;
+						boolean down = false;
 						while (listTimes == null) { //when there is no data for current time, consider next time or before time
-							otherTime++;
-							if (otherTime == 24) {
+							
+							if (otherTime == 24 || down) {
+								down = true;
 								otherTime--;
+							} else {
+								otherTime++;
 							}
+							
 							String stationGPSNextTime = closestStation + "_" + otherTime;
 							listTimes = stationDataMap.get(stationGPSNextTime);
 						}
@@ -350,10 +351,10 @@ public class MatchingGPSWeatherWaze {
 						matchingGP3S.setPrecStationDistanceToGPS(closestDistance);
 						
 						String latLonKey = String.valueOf(matchingGP3S.getLatShape()).replace(" ",  "").substring(0, 4) + ":" + String.valueOf(matchingGP3S.getLonShape()).replace(" ",  "").substring(0, 5);
-
 						return new Tuple2<String, Object>(latLonKey, matchingGP3S);
 					}
 				});
+		
 
 		
 		// ---------------------Integration of waze data---------------------
@@ -367,7 +368,6 @@ public class MatchingGPSWeatherWaze {
 
 			public Tuple2<String, Object> call(String alertsString) throws Exception {
 				String[] splittedEntry = alertsString.split(SEPARATOR_WAZE); //to deal with comma inside fields
-				
 				String roadType = "-";
 				try {
 					roadType = splittedEntry[wazeRoadType];
@@ -383,7 +383,6 @@ public class MatchingGPSWeatherWaze {
 
 				// lat:lon:data
 				String latLonKey = String.valueOf(alert.getAlertLatitude()).substring(0, 4) + ":" + String.valueOf(alert.getAlertLongitude()).substring(0, 5);
-
 				return new Tuple2<String, Object>(latLonKey, alert);
 			}
 		});
