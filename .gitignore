@@ -6,3 +6,4 @@ data/
 .Ruserdata
 .recommenders/
 *.pkl
+*.model
