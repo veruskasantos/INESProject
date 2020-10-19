@@ -1,3 +1,5 @@
+Data: https://drive.google.com/file/d/1NJJKGFeHxHAgXfX7tOIbML9H3r-HKEfW/view?usp=sharing (integrated data of Curitiba - output of steps 1 and 2)
+
 For each city, run:
 
 1.PRE-PROCESSING
